@@ -59,6 +59,35 @@
             padding-bottom: 10px;
         }
 
+        .filter-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .filter-tab {
+            padding: 8px 16px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .filter-tab.active {
+            background: #1877f2;
+            color: white;
+            border-color: #1877f2;
+        }
+
+        .filter-content {
+            display: none;
+        }
+
+        .filter-content.active {
+            display: block;
+        }
+
         .filter-row {
             display: flex;
             gap: 20px;
@@ -72,6 +101,10 @@
             min-width: 200px;
         }
 
+        .filter-item.full-width {
+            min-width: 100%;
+        }
+
         .filter-item label {
             display: block;
             margin-bottom: 8px;
@@ -80,6 +113,7 @@
         }
 
         .filter-item input[type="date"],
+        .filter-item input[type="text"],
         .filter-item select {
             width: 100%;
             padding: 10px;
@@ -90,10 +124,21 @@
         }
 
         .filter-item input[type="date"]:focus,
+        .filter-item input[type="text"]:focus,
         .filter-item select:focus {
             outline: none;
             border-color: #1877f2;
             box-shadow: 0 0 0 3px rgba(24, 119, 242, 0.1);
+        }
+
+        .filter-item textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 14px;
+            min-height: 80px;
+            resize: vertical;
         }
 
         .checkbox-wrapper {
@@ -271,15 +316,30 @@
         }
 
         .factor-row {
-            background-color: #f8fafb;
+            background-color: #fafbfc;
             font-size: 14px;
         }
 
         .factor-row td:first-child {
             padding-left: 40px;
+            position: relative;
+        }
+
+        .factor-row td:first-child::before {
+            content: "└";
+            position: absolute;
+            left: 20px;
+            color: #adb5bd;
         }
 
         .metric-cell {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+        }
+
+        .metric-value-wrapper {
             display: flex;
             align-items: center;
             gap: 8px;
@@ -288,11 +348,15 @@
         .metric-value {
             font-weight: 600;
             color: #2c3e50;
+            font-size: 16px;
         }
 
         .metric-percentage {
             color: #6c757d;
             font-size: 13px;
+            background: #e9ecef;
+            padding: 2px 8px;
+            border-radius: 12px;
         }
 
         .trend-arrow {
@@ -409,44 +473,63 @@
             margin-left: 5px;
         }
 
+        .hint-text {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
         @media (max-width: 768px) {
             .filter-row {
                 flex-direction: column;
             }
-            
+
             .filter-item {
                 min-width: 100%;
             }
-            
+
             .summary-grid {
                 grid-template-columns: 1fr;
             }
-            
+
             .table-responsive {
                 font-size: 14px;
             }
-            
+
             td, th {
                 padding: 10px;
+            }
+
+            .metric-cell {
+                flex-direction: column;
+                align-items: flex-start;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Facebook广告户消耗分析系统</h1>
-            <p>实时监控和分析广告账户消耗情况，快速定位问题原因</p>
+<div class="container">
+    <div class="header">
+        <h1>Facebook广告户消耗分析系统</h1>
+        <p>实时监控和分析广告账户消耗情况，快速定位问题原因</p>
+    </div>
+
+    <!-- 筛选部分 -->
+    <div class="filter-section">
+        <h2>数据筛选</h2>
+
+        <div class="filter-tabs">
+            <div class="filter-tab active" onclick="switchFilterTab('normal')">普通筛选</div>
+            <div class="filter-tab" onclick="switchFilterTab('account')">广告户筛选</div>
         </div>
 
-        <!-- 筛选部分 -->
-        <div class="filter-section">
-            <h2>数据筛选</h2>
+        <!-- 普通筛选 -->
+        <div id="normalFilter" class="filter-content active">
             <div class="filter-row">
                 <div class="filter-item">
                     <label>客户选择（支持多选）</label>
                     <div class="multi-select">
-                        <input type="text" placeholder="点击选择客户" readonly onclick="toggleDropdown('customerDropdown')" style="width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; cursor: pointer;">
+                        <input type="text" placeholder="点击选择客户" readonly onclick="toggleDropdown('customerDropdown')" style="cursor: pointer;">
                         <div id="customerDropdown" class="multi-select-dropdown">
                             <div class="multi-select-option" onclick="toggleCustomer('all')">
                                 <input type="checkbox" id="customer-all">
@@ -477,365 +560,468 @@
                     <input type="date" id="endDate" value="2024-12-31">
                 </div>
             </div>
-            
+
             <div class="checkbox-wrapper">
                 <input type="checkbox" id="mergeAbnormal">
                 <label for="mergeAbnormal">合并低消耗与不消耗为消耗异常</label>
             </div>
+        </div>
 
-            <div class="threshold-settings">
-                <span>低消耗定义：</span>
-                <div class="threshold-input">
-                    <span>广告开启</span>
-                    <input type="number" id="thresholdHours" value="6" min="1">
-                    <span>小时后，消耗 < </span>
-                    <input type="number" id="thresholdAmount" value="10" min="0">
-                    <span>美元</span>
+        <!-- 广告户筛选 -->
+        <div id="accountFilter" class="filter-content">
+            <div class="filter-row">
+                <div class="filter-item full-width">
+                    <label>广告户ID（支持空格分隔多个ID）</label>
+                    <textarea id="accountIds" placeholder="例如：1234567890 0987654321 1122334455"></textarea>
+                    <div class="hint-text">输入广告户ID，多个ID之间用空格分隔</div>
                 </div>
-                <div class="tooltip">
-                    <span class="info-icon">?</span>
-                    <span class="tooltiptext">在预算和余额充足的情况下，广告开启指定时间后消耗仍低于设定值的账户</span>
-                </div>
-            </div>
-
-            <div class="filter-actions">
-                <button class="btn btn-primary" onclick="applyFilters()">应用筛选</button>
-                <button class="btn btn-secondary" onclick="resetFilters()">重置</button>
             </div>
         </div>
 
-        <!-- 影响因素分析 -->
-        <div class="filter-section">
-            <h2>影响因素分析</h2>
-            <div class="filter-row">
-                <div class="filter-item">
-                    <label>卡头</label>
-                    <select id="cardHead">
-                        <option value="">全部</option>
-                        <option value="卡头A">卡头A</option>
-                        <option value="卡头B">卡头B</option>
-                        <option value="卡头C">卡头C</option>
-                    </select>
-                </div>
-                <div class="filter-item">
-                    <label>投放国家</label>
-                    <select id="country">
-                        <option value="">全部</option>
-                        <option value="印度">印度</option>
-                        <option value="美国">美国</option>
-                        <option value="巴西">巴西</option>
-                        <option value="印尼">印尼</option>
-                    </select>
-                </div>
-                <div class="filter-item">
-                    <label style="margin-bottom: 15px;">&nbsp;</label>
-                    <div style="display: flex; gap: 20px;">
-                        <div class="checkbox-wrapper" style="margin: 0;">
-                            <input type="checkbox" id="oneClick">
-                            <label for="oneClick">一刀流</label>
-                        </div>
-                        <div class="checkbox-wrapper" style="margin: 0;">
-                            <input type="checkbox" id="paymentIssue">
-                            <label for="paymentIssue">支付问题</label>
-                        </div>
+        <div class="threshold-settings">
+            <span>低消耗定义：</span>
+            <div class="threshold-input">
+                <span>广告开启</span>
+                <input type="number" id="thresholdHours" value="6" min="1">
+                <span>小时后，消耗 < </span>
+                <input type="number" id="thresholdAmount" value="10" min="0" step="0.01">
+                <span>美元</span>
+            </div>
+            <div class="tooltip">
+                <span class="info-icon">?</span>
+                <span class="tooltiptext">在预算和余额充足的情况下，广告开启指定时间后消耗仍低于设定值的账户</span>
+            </div>
+        </div>
+
+        <div class="filter-actions">
+            <button class="btn btn-primary" onclick="applyFilters()">应用筛选</button>
+            <button class="btn btn-secondary" onclick="resetFilters()">重置</button>
+        </div>
+    </div>
+
+    <!-- 影响因素分析 -->
+    <div class="filter-section">
+        <h2>影响因素分析</h2>
+        <div class="filter-row">
+            <div class="filter-item">
+                <label>卡头</label>
+                <select id="cardHead">
+                    <option value="">全部</option>
+                    <option value="卡头A">卡头A</option>
+                    <option value="卡头B">卡头B</option>
+                    <option value="卡头C">卡头C</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <label>投放国家</label>
+                <select id="country">
+                    <option value="">全部</option>
+                    <option value="印度">印度</option>
+                    <option value="美国">美国</option>
+                    <option value="巴西">巴西</option>
+                    <option value="印尼">印尼</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <label style="margin-bottom: 15px;">&nbsp;</label>
+                <div style="display: flex; gap: 20px;">
+                    <div class="checkbox-wrapper" style="margin: 0;">
+                        <input type="checkbox" id="oneClick">
+                        <label for="oneClick">一刀流</label>
+                    </div>
+                    <div class="checkbox-wrapper" style="margin: 0;">
+                        <input type="checkbox" id="paymentIssue">
+                        <label for="paymentIssue">支付问题</label>
                     </div>
                 </div>
             </div>
-            <div class="filter-actions">
-                <button class="btn btn-primary" onclick="analyzeFactors()">分析影响因素</button>
-            </div>
         </div>
-
-        <!-- 汇总数据 -->
-        <div class="summary-section">
-            <div class="summary-grid">
-                <div class="summary-item">
-                    <div class="value">70</div>
-                    <div class="label">总下户数</div>
-                </div>
-                <div class="summary-item">
-                    <div class="value">50</div>
-                    <div class="label">广告使用数</div>
-                    <div class="percentage">71.43%</div>
-                </div>
-                <div class="summary-item">
-                    <div class="value">7</div>
-                    <div class="label">不消耗数</div>
-                    <div class="percentage" style="color: #dc3545;">10.00%</div>
-                </div>
-                <div class="summary-item">
-                    <div class="value">13</div>
-                    <div class="label">低消耗数</div>
-                    <div class="percentage" style="color: #ffc107;">18.57%</div>
-                </div>
-                <div class="summary-item">
-                    <div class="value">30</div>
-                    <div class="label">正常消耗</div>
-                    <div class="percentage">42.86%</div>
-                </div>
-            </div>
+        <div class="filter-actions">
+            <button class="btn btn-primary" onclick="analyzeFactors()">分析影响因素</button>
         </div>
+    </div>
 
-        <!-- 数据表格 -->
-        <div class="data-table">
-            <div class="table-responsive">
-                <table id="dataTable">
-                    <thead>
-                        <tr>
-                            <th>客户名称</th>
-                            <th>总下户数</th>
-                            <th>广告使用数</th>
-                            <th>不消耗数</th>
-                            <th>低消耗数</th>
-                            <th>正常消耗</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody">
-                        <!-- 数据将通过JavaScript动态生成 -->
-                    </tbody>
-                </table>
+    <!-- 汇总数据 -->
+    <div class="summary-section">
+        <div class="summary-grid">
+            <div class="summary-item">
+                <div class="value">70</div>
+                <div class="label">总下户数</div>
+            </div>
+            <div class="summary-item">
+                <div class="value">50</div>
+                <div class="label">广告使用数</div>
+                <div class="percentage">71.43%</div>
+            </div>
+            <div class="summary-item">
+                <div class="value">7</div>
+                <div class="label">不消耗数</div>
+                <div class="percentage" style="color: #dc3545;">10.00%</div>
+            </div>
+            <div class="summary-item">
+                <div class="value">13</div>
+                <div class="label">低消耗数</div>
+                <div class="percentage" style="color: #ffc107;">18.57%</div>
+            </div>
+            <div class="summary-item">
+                <div class="value">30</div>
+                <div class="label">正常消耗</div>
+                <div class="percentage">42.86%</div>
             </div>
         </div>
     </div>
 
-    <script>
-        // 模拟数据
-        const mockData = {
-            customers: [
-                {
-                    name: '客户A',
-                    total: 30,
-                    inUse: 20,
-                    noConsume: 5,
-                    lowConsume: 5,
-                    normal: 10,
-                    factors: {
-                        '印度': { inUse: 15, noConsume: 2, lowConsume: 3, normal: 10 },
-                        '一刀流': { inUse: 5, noConsume: 1, lowConsume: 2, normal: 2 },
-                        '卡头A': { inUse: 10, noConsume: 2, lowConsume: 2, normal: 6 },
-                        '支付问题': { inUse: 8, noConsume: 3, lowConsume: 2, normal: 3 }
-                    }
-                },
-                {
-                    name: '客户B',
-                    total: 40,
-                    inUse: 30,
-                    noConsume: 2,
-                    lowConsume: 8,
-                    normal: 20,
-                    factors: {
-                        '印度': { inUse: 20, noConsume: 1, lowConsume: 4, normal: 15 },
-                        '一刀流': { inUse: 10, noConsume: 1, lowConsume: 3, normal: 6 },
-                        '卡头A': { inUse: 15, noConsume: 1, lowConsume: 4, normal: 10 },
-                        '支付问题': { inUse: 12, noConsume: 1, lowConsume: 5, normal: 6 }
-                    }
-                },
-                {
-                    name: '客户C',
-                    total: 25,
-                    inUse: 18,
-                    noConsume: 3,
-                    lowConsume: 4,
-                    normal: 11,
-                    factors: {
-                        '印度': { inUse: 10, noConsume: 2, lowConsume: 2, normal: 6 },
-                        '一刀流': { inUse: 8, noConsume: 1, lowConsume: 2, normal: 5 },
-                        '卡头A': { inUse: 12, noConsume: 2, lowConsume: 3, normal: 7 },
-                        '支付问题': { inUse: 6, noConsume: 1, lowConsume: 2, normal: 3 }
-                    }
+    <!-- 数据表格 -->
+    <div class="data-table">
+        <div class="table-responsive">
+            <table id="dataTable">
+                <thead>
+                <tr id="tableHeader">
+                    <th>客户名称</th>
+                    <th>总下户数</th>
+                    <th>广告使用数</th>
+                    <th>不消耗数</th>
+                    <th>低消耗数</th>
+                    <th>正常消耗</th>
+                </tr>
+                </thead>
+                <tbody id="tableBody">
+                <!-- 数据将通过JavaScript动态生成 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 模拟数据
+    const mockData = {
+        customers: [
+            {
+                name: '客户A',
+                total: 30,
+                inUse: 20,
+                noConsume: 5,
+                lowConsume: 5,
+                normal: 10,
+                factors: {
+                    '印度': { inUse: 15, noConsume: 2, lowConsume: 3, normal: 10 },
+                    '一刀流': { inUse: 5, noConsume: 1, lowConsume: 2, normal: 2 },
+                    '卡头A': { inUse: 10, noConsume: 2, lowConsume: 2, normal: 6 },
+                    '支付问题': { inUse: 8, noConsume: 3, lowConsume: 2, normal: 3 }
                 }
-            ]
-        };
-
-        let selectedCustomers = [];
-        let selectedFactors = [];
-
-        // 初始化页面
-        document.addEventListener('DOMContentLoaded', function() {
-            renderTable();
-        });
-
-        // 切换下拉菜单
-        function toggleDropdown(dropdownId) {
-            const dropdown = document.getElementById(dropdownId);
-            dropdown.classList.toggle('show');
-        }
-
-        // 选择客户
-        function toggleCustomer(customer) {
-            if (customer === 'all') {
-                if (selectedCustomers.includes('all')) {
-                    selectedCustomers = [];
-                    document.querySelectorAll('.multi-select-option input[type="checkbox"]').forEach(cb => cb.checked = false);
-                } else {
-                    selectedCustomers = ['all'];
-                    document.querySelectorAll('.multi-select-option input[type="checkbox"]').forEach(cb => cb.checked = true);
+            },
+            {
+                name: '客户B',
+                total: 40,
+                inUse: 30,
+                noConsume: 2,
+                lowConsume: 8,
+                normal: 20,
+                factors: {
+                    '印度': { inUse: 20, noConsume: 1, lowConsume: 4, normal: 15 },
+                    '一刀流': { inUse: 10, noConsume: 1, lowConsume: 3, normal: 6 },
+                    '卡头A': { inUse: 15, noConsume: 1, lowConsume: 4, normal: 10 },
+                    '支付问题': { inUse: 12, noConsume: 1, lowConsume: 5, normal: 6 }
                 }
-            } else {
-                const index = selectedCustomers.indexOf(customer);
-                if (index > -1) {
-                    selectedCustomers.splice(index, 1);
-                } else {
-                    selectedCustomers.push(customer);
-                }
-                
-                // 更新全选状态
-                const allIndex = selectedCustomers.indexOf('all');
-                if (allIndex > -1) {
-                    selectedCustomers.splice(allIndex, 1);
-                    document.getElementById('customer-all').checked = false;
+            },
+            {
+                name: '客户C',
+                total: 25,
+                inUse: 18,
+                noConsume: 3,
+                lowConsume: 4,
+                normal: 11,
+                factors: {
+                    '印度': { inUse: 10, noConsume: 2, lowConsume: 2, normal: 6 },
+                    '一刀流': { inUse: 8, noConsume: 1, lowConsume: 2, normal: 5 },
+                    '卡头A': { inUse: 12, noConsume: 2, lowConsume: 3, normal: 7 },
+                    '支付问题': { inUse: 6, noConsume: 1, lowConsume: 2, normal: 3 }
                 }
             }
-            
-            updateSelectedTags();
-        }
+        ],
+        accounts: [
+            { id: '1234567890', total: 10, inUse: 8, noConsume: 1, lowConsume: 1, normal: 6 },
+            { id: '0987654321', total: 15, inUse: 10, noConsume: 2, lowConsume: 2, normal: 6 },
+            { id: '1122334455', total: 20, inUse: 15, noConsume: 1, lowConsume: 3, normal: 11 }
+        ]
+    };
 
-        // 更新选中标签
-        function updateSelectedTags() {
-            const container = document.getElementById('selectedCustomers');
-            container.innerHTML = '';
-            
-            const displayCustomers = selectedCustomers.filter(c => c !== 'all');
+    let selectedCustomers = [];
+    let selectedFactors = [];
+    let currentFilterMode = 'normal';
+
+    // 初始化页面
+    document.addEventListener('DOMContentLoaded', function() {
+        renderTable();
+    });
+
+    // 切换筛选标签
+    function switchFilterTab(mode) {
+        currentFilterMode = mode;
+        document.querySelectorAll('.filter-tab').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.filter-content').forEach(content => content.classList.remove('active'));
+
+        if (mode === 'normal') {
+            document.querySelector('.filter-tab:first-child').classList.add('active');
+            document.getElementById('normalFilter').classList.add('active');
+        } else {
+            document.querySelector('.filter-tab:last-child').classList.add('active');
+            document.getElementById('accountFilter').classList.add('active');
+        }
+    }
+
+    // 切换下拉菜单
+    function toggleDropdown(dropdownId) {
+        const dropdown = document.getElementById(dropdownId);
+        dropdown.classList.toggle('show');
+    }
+
+    // 选择客户
+    function toggleCustomer(customer) {
+        if (customer === 'all') {
             if (selectedCustomers.includes('all')) {
-                displayCustomers.push('全部客户');
-            }
-            
-            displayCustomers.forEach(customer => {
-                const tag = document.createElement('div');
-                tag.className = 'tag';
-                tag.innerHTML = `
-                    ${customer}
-                    <span class="remove" onclick="removeCustomer('${customer}')">×</span>
-                `;
-                container.appendChild(tag);
-            });
-        }
-
-        // 移除客户
-        function removeCustomer(customer) {
-            if (customer === '全部客户') {
                 selectedCustomers = [];
                 document.querySelectorAll('.multi-select-option input[type="checkbox"]').forEach(cb => cb.checked = false);
             } else {
-                const index = selectedCustomers.indexOf(customer);
-                if (index > -1) {
-                    selectedCustomers.splice(index, 1);
-                }
+                selectedCustomers = ['all'];
+                document.querySelectorAll('.multi-select-option input[type="checkbox"]').forEach(cb => cb.checked = true);
             }
-            updateSelectedTags();
+        } else {
+            const index = selectedCustomers.indexOf(customer);
+            if (index > -1) {
+                selectedCustomers.splice(index, 1);
+            } else {
+                selectedCustomers.push(customer);
+            }
+
+            // 更新全选状态
+            const allIndex = selectedCustomers.indexOf('all');
+            if (allIndex > -1) {
+                selectedCustomers.splice(allIndex, 1);
+                document.getElementById('customer-all').checked = false;
+            }
         }
 
-        // 点击其他地方关闭下拉菜单
-        document.addEventListener('click', function(event) {
-            if (!event.target.closest('.multi-select')) {
-                document.querySelectorAll('.multi-select-dropdown').forEach(dropdown => {
-                    dropdown.classList.remove('show');
-                });
-            }
+        updateSelectedTags();
+    }
+
+    // 更新选中标签
+    function updateSelectedTags() {
+        const container = document.getElementById('selectedCustomers');
+        container.innerHTML = '';
+
+        const displayCustomers = selectedCustomers.filter(c => c !== 'all');
+        if (selectedCustomers.includes('all')) {
+            displayCustomers.push('全部客户');
+        }
+
+        displayCustomers.forEach(customer => {
+            const tag = document.createElement('div');
+            tag.className = 'tag';
+            tag.innerHTML = `
+                    ${customer}
+                    <span class="remove" onclick="removeCustomer('${customer}')">×</span>
+                `;
+            container.appendChild(tag);
         });
+    }
 
-        // 应用筛选
-        function applyFilters() {
-            const mergeAbnormal = document.getElementById('mergeAbnormal').checked;
-            renderTable(mergeAbnormal);
-        }
-
-        // 重置筛选
-        function resetFilters() {
+    // 移除客户
+    function removeCustomer(customer) {
+        if (customer === '全部客户') {
             selectedCustomers = [];
-            selectedFactors = [];
-            document.getElementById('startDate').value = '2024-01-01';
-            document.getElementById('endDate').value = '2024-12-31';
-            document.getElementById('mergeAbnormal').checked = false;
-            document.getElementById('thresholdHours').value = 6;
-            document.getElementById('thresholdAmount').value = 10;
             document.querySelectorAll('.multi-select-option input[type="checkbox"]').forEach(cb => cb.checked = false);
-            updateSelectedTags();
-            renderTable();
-        }
-
-        // 分析影响因素
-        function analyzeFactors() {
-            selectedFactors = [];
-            
-            const cardHead = document.getElementById('cardHead').value;
-            const country = document.getElementById('country').value;
-            const oneClick = document.getElementById('oneClick').checked;
-            const paymentIssue = document.getElementById('paymentIssue').checked;
-            
-            if (cardHead) selectedFactors.push(cardHead);
-            if (country) selectedFactors.push(country);
-            if (oneClick) selectedFactors.push('一刀流');
-            if (paymentIssue) selectedFactors.push('支付问题');
-            
-            renderTable();
-        }
-
-        // 计算百分比
-        function calculatePercentage(value, total) {
-            return total > 0 ? ((value / total) * 100).toFixed(2) : '0.00';
-        }
-
-        // 渲染数据单元格
-        function renderDataCell(value, total, comparePercentage = null) {
-            const percentage = calculatePercentage(value, total);
-            let trendArrow = '';
-            
-            if (comparePercentage !== null) {
-                if (parseFloat(percentage) > parseFloat(comparePercentage)) {
-                    trendArrow = '<span class="trend-arrow trend-up">↑</span>';
-                } else if (parseFloat(percentage) < parseFloat(comparePercentage)) {
-                    trendArrow = '<span class="trend-arrow trend-down">↓</span>';
-                }
+        } else {
+            const index = selectedCustomers.indexOf(customer);
+            if (index > -1) {
+                selectedCustomers.splice(index, 1);
             }
-            
-            return `
+        }
+        updateSelectedTags();
+    }
+
+    // 点击其他地方关闭下拉菜单
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.multi-select')) {
+            document.querySelectorAll('.multi-select-dropdown').forEach(dropdown => {
+                dropdown.classList.remove('show');
+            });
+        }
+    });
+
+    // 应用筛选
+    function applyFilters() {
+        const mergeAbnormal = document.getElementById('mergeAbnormal').checked;
+        renderTable(mergeAbnormal);
+    }
+
+    // 重置筛选
+    function resetFilters() {
+        selectedCustomers = [];
+        selectedFactors = [];
+        document.getElementById('startDate').value = '2024-01-01';
+        document.getElementById('endDate').value = '2024-12-31';
+        document.getElementById('mergeAbnormal').checked = false;
+        document.getElementById('thresholdHours').value = 6;
+        document.getElementById('thresholdAmount').value = 10;
+        document.getElementById('accountIds').value = '';
+        document.querySelectorAll('.multi-select-option input[type="checkbox"]').forEach(cb => cb.checked = false);
+        updateSelectedTags();
+        renderTable();
+    }
+
+    // 分析影响因素
+    function analyzeFactors() {
+        selectedFactors = [];
+
+        const cardHead = document.getElementById('cardHead').value;
+        const country = document.getElementById('country').value;
+        const oneClick = document.getElementById('oneClick').checked;
+        const paymentIssue = document.getElementById('paymentIssue').checked;
+
+        if (cardHead) selectedFactors.push(cardHead);
+        if (country) selectedFactors.push(country);
+        if (oneClick) selectedFactors.push('一刀流');
+        if (paymentIssue) selectedFactors.push('支付问题');
+
+        renderTable();
+    }
+
+    // 计算百分比
+    function calculatePercentage(value, total) {
+        return total > 0 ? ((value / total) * 100).toFixed(2) : '0.00';
+    }
+
+    // 渲染数据单元格
+    function renderDataCell(value, total, comparePercentage = null) {
+        const percentage = calculatePercentage(value, total);
+        let trendArrow = '';
+
+        if (comparePercentage !== null) {
+            if (parseFloat(percentage) > parseFloat(comparePercentage)) {
+                trendArrow = '<span class="trend-arrow trend-up">↑</span>';
+            } else if (parseFloat(percentage) < parseFloat(comparePercentage)) {
+                trendArrow = '<span class="trend-arrow trend-down">↓</span>';
+            }
+        }
+
+        return `
                 <div class="metric-cell">
-                    <span class="metric-value">${value}</span>
-                    <span class="metric-percentage">(${percentage}%)</span>
-                    ${trendArrow}
+                    <div class="metric-value-wrapper">
+                        <span class="metric-value">${value}</span>
+                        ${trendArrow}
+                    </div>
+                    <span class="metric-percentage">${percentage}%</span>
                 </div>
             `;
-        }
+    }
 
-        // 渲染表格
-        function renderTable(mergeAbnormal = false) {
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '';
-            
+    // 渲染表格
+    function renderTable(mergeAbnormal = false) {
+        const tbody = document.getElementById('tableBody');
+        const thead = document.getElementById('tableHeader');
+        tbody.innerHTML = '';
+
+        // 根据筛选模式渲染不同的表格
+        if (currentFilterMode === 'account') {
+            // 广告户筛选模式
+            thead.innerHTML = `
+                    <th>总下户数</th>
+                    <th>广告使用数</th>
+                    <th>不消耗数</th>
+                    <th>低消耗数</th>
+                    <th>正常消耗</th>
+                `;
+
+            // 获取输入的广告户ID
+            const accountIdsInput = document.getElementById('accountIds').value;
+            const accountIds = accountIdsInput.trim().split(/\s+/).filter(id => id);
+
+            // 模拟根据ID筛选数据
+            let filteredAccounts = mockData.accounts;
+            if (accountIds.length > 0) {
+                filteredAccounts = filteredAccounts.filter(acc => accountIds.includes(acc.id));
+            }
+
+            // 计算汇总
+            let totalSum = 0, inUseSum = 0, noConsumeSum = 0, lowConsumeSum = 0, normalSum = 0;
+
+            filteredAccounts.forEach(account => {
+                totalSum += account.total;
+                inUseSum += account.inUse;
+                noConsumeSum += account.noConsume;
+                lowConsumeSum += account.lowConsume;
+                normalSum += account.normal;
+
+                const row = document.createElement('tr');
+                if (mergeAbnormal) {
+                    const abnormalCount = account.noConsume + account.lowConsume;
+                    row.innerHTML = `
+                            <td>${account.total}</td>
+                            <td>${renderDataCell(account.inUse, account.total)}</td>
+                            <td colspan="2">${renderDataCell(abnormalCount, account.total)}</td>
+                            <td>${renderDataCell(account.normal, account.total)}</td>
+                        `;
+                } else {
+                    row.innerHTML = `
+                            <td>${account.total}</td>
+                            <td>${renderDataCell(account.inUse, account.total)}</td>
+                            <td>${renderDataCell(account.noConsume, account.total)}</td>
+                            <td>${renderDataCell(account.lowConsume, account.total)}</td>
+                            <td>${renderDataCell(account.normal, account.total)}</td>
+                        `;
+                }
+                tbody.appendChild(row);
+            });
+
+            // 更新汇总数据
+            updateSummaryForAccounts(totalSum, inUseSum, noConsumeSum, lowConsumeSum, normalSum, mergeAbnormal);
+
+        } else {
+            // 普通筛选模式
+            thead.innerHTML = `
+                    <th>客户名称</th>
+                    <th>总下户数</th>
+                    <th>广告使用数</th>
+                    <th>不消耗数</th>
+                    <th>低消耗数</th>
+                    <th>正常消耗</th>
+                `;
+
             // 筛选客户数据
             let filteredData = mockData.customers;
             if (selectedCustomers.length > 0 && !selectedCustomers.includes('all')) {
                 filteredData = filteredData.filter(c => selectedCustomers.includes(c.name));
             }
-            
+
             // 渲染每个客户的数据
             filteredData.forEach(customer => {
                 // 主行
                 const mainRow = document.createElement('tr');
                 mainRow.className = 'customer-row';
-                
+
                 if (mergeAbnormal) {
                     const abnormalCount = customer.noConsume + customer.lowConsume;
                     mainRow.innerHTML = `
-                        <td><strong>${customer.name}</strong></td>
-                        <td>${customer.total}</td>
-                        <td>${renderDataCell(customer.inUse, customer.total)}</td>
-                        <td colspan="2">${renderDataCell(abnormalCount, customer.total)}</td>
-                        <td>${renderDataCell(customer.normal, customer.total)}</td>
-                    `;
+                            <td><strong>${customer.name}</strong></td>
+                            <td>${customer.total}</td>
+                            <td>${renderDataCell(customer.inUse, customer.total)}</td>
+                            <td colspan="2">${renderDataCell(abnormalCount, customer.total)}</td>
+                            <td>${renderDataCell(customer.normal, customer.total)}</td>
+                        `;
                 } else {
                     mainRow.innerHTML = `
-                        <td><strong>${customer.name}</strong></td>
-                        <td>${customer.total}</td>
-                        <td>${renderDataCell(customer.inUse, customer.total)}</td>
-                        <td>${renderDataCell(customer.noConsume, customer.total)}</td>
-                        <td>${renderDataCell(customer.lowConsume, customer.total)}</td>
-                        <td>${renderDataCell(customer.normal, customer.total)}</td>
-                    `;
+                            <td><strong>${customer.name}</strong></td>
+                            <td>${customer.total}</td>
+                            <td>${renderDataCell(customer.inUse, customer.total)}</td>
+                            <td>${renderDataCell(customer.noConsume, customer.total)}</td>
+                            <td>${renderDataCell(customer.lowConsume, customer.total)}</td>
+                            <td>${renderDataCell(customer.normal, customer.total)}</td>
+                        `;
                 }
                 tbody.appendChild(mainRow);
-                
+
                 // 影响因素行
                 if (selectedFactors.length > 0) {
                     selectedFactors.forEach(factor => {
@@ -843,82 +1029,93 @@
                             const factorData = customer.factors[factor];
                             const factorRow = document.createElement('tr');
                             factorRow.className = 'factor-row';
-                            
+
                             // 计算主行的百分比用于比较
+                            const mainInUsePerc = calculatePercentage(customer.inUse, customer.total);
                             const mainNoConsumePerc = calculatePercentage(customer.noConsume, customer.total);
                             const mainLowConsumePerc = calculatePercentage(customer.lowConsume, customer.total);
                             const mainNormalPerc = calculatePercentage(customer.normal, customer.total);
-                            
+
                             if (mergeAbnormal) {
                                 const abnormalCount = factorData.noConsume + factorData.lowConsume;
                                 const mainAbnormalPerc = calculatePercentage(customer.noConsume + customer.lowConsume, customer.total);
                                 factorRow.innerHTML = `
-                                    <td>${factor}</td>
-                                    <td>-</td>
-                                    <td>${renderDataCell(factorData.inUse, customer.total)}</td>
-                                    <td colspan="2">${renderDataCell(abnormalCount, customer.total, mainAbnormalPerc)}</td>
-                                    <td>${renderDataCell(factorData.normal, customer.total, mainNormalPerc)}</td>
-                                `;
+                                        <td>${factor}</td>
+                                        <td>-</td>
+                                        <td>${renderDataCell(factorData.inUse, customer.total, mainInUsePerc)}</td>
+                                        <td colspan="2">${renderDataCell(abnormalCount, customer.total, mainAbnormalPerc)}</td>
+                                        <td>${renderDataCell(factorData.normal, customer.total, mainNormalPerc)}</td>
+                                    `;
                             } else {
                                 factorRow.innerHTML = `
-                                    <td>${factor}</td>
-                                    <td>-</td>
-                                    <td>${renderDataCell(factorData.inUse, customer.total)}</td>
-                                    <td>${renderDataCell(factorData.noConsume, customer.total, mainNoConsumePerc)}</td>
-                                    <td>${renderDataCell(factorData.lowConsume, customer.total, mainLowConsumePerc)}</td>
-                                    <td>${renderDataCell(factorData.normal, customer.total, mainNormalPerc)}</td>
-                                `;
+                                        <td>${factor}</td>
+                                        <td>-</td>
+                                        <td>${renderDataCell(factorData.inUse, customer.total, mainInUsePerc)}</td>
+                                        <td>${renderDataCell(factorData.noConsume, customer.total, mainNoConsumePerc)}</td>
+                                        <td>${renderDataCell(factorData.lowConsume, customer.total, mainLowConsumePerc)}</td>
+                                        <td>${renderDataCell(factorData.normal, customer.total, mainNormalPerc)}</td>
+                                    `;
                             }
                             tbody.appendChild(factorRow);
                         }
                     });
                 }
             });
-            
+
             // 更新汇总数据
             updateSummary(filteredData, mergeAbnormal);
         }
+    }
 
-        // 更新汇总数据
-        function updateSummary(data, mergeAbnormal) {
-            let totalAccounts = 0;
-            let totalInUse = 0;
-            let totalNoConsume = 0;
-            let totalLowConsume = 0;
-            let totalNormal = 0;
-            
-            data.forEach(customer => {
-                totalAccounts += customer.total;
-                totalInUse += customer.inUse;
-                totalNoConsume += customer.noConsume;
-                totalLowConsume += customer.lowConsume;
-                totalNormal += customer.normal;
-            });
-            
-            // 更新汇总显示
-            const summaryItems = document.querySelectorAll('.summary-item');
-            summaryItems[0].querySelector('.value').textContent = totalAccounts;
-            summaryItems[1].querySelector('.value').textContent = totalInUse;
-            summaryItems[1].querySelector('.percentage').textContent = calculatePercentage(totalInUse, totalAccounts) + '%';
-            
-            if (mergeAbnormal) {
-                // 隐藏单独的不消耗和低消耗，显示合并后的消耗异常
-                summaryItems[2].querySelector('.value').textContent = totalNoConsume + totalLowConsume;
-                summaryItems[2].querySelector('.label').textContent = '消耗异常';
-                summaryItems[2].querySelector('.percentage').textContent = calculatePercentage(totalNoConsume + totalLowConsume, totalAccounts) + '%';
-                summaryItems[3].style.display = 'none';
-            } else {
-                summaryItems[2].querySelector('.value').textContent = totalNoConsume;
-                summaryItems[2].querySelector('.label').textContent = '不消耗数';
-                summaryItems[2].querySelector('.percentage').textContent = calculatePercentage(totalNoConsume, totalAccounts) + '%';
-                summaryItems[3].style.display = 'block';
-                summaryItems[3].querySelector('.value').textContent = totalLowConsume;
-                summaryItems[3].querySelector('.percentage').textContent = calculatePercentage(totalLowConsume, totalAccounts) + '%';
-            }
-            
-            summaryItems[4].querySelector('.value').textContent = totalNormal;
-            summaryItems[4].querySelector('.percentage').textContent = calculatePercentage(totalNormal, totalAccounts) + '%';
+    // 更新汇总数据（普通筛选）
+    function updateSummary(data, mergeAbnormal) {
+        let totalAccounts = 0;
+        let totalInUse = 0;
+        let totalNoConsume = 0;
+        let totalLowConsume = 0;
+        let totalNormal = 0;
+
+        data.forEach(customer => {
+            totalAccounts += customer.total;
+            totalInUse += customer.inUse;
+            totalNoConsume += customer.noConsume;
+            totalLowConsume += customer.lowConsume;
+            totalNormal += customer.normal;
+        });
+
+        updateSummaryDisplay(totalAccounts, totalInUse, totalNoConsume, totalLowConsume, totalNormal, mergeAbnormal);
+    }
+
+    // 更新汇总数据（广告户筛选）
+    function updateSummaryForAccounts(totalAccounts, totalInUse, totalNoConsume, totalLowConsume, totalNormal, mergeAbnormal) {
+        updateSummaryDisplay(totalAccounts, totalInUse, totalNoConsume, totalLowConsume, totalNormal, mergeAbnormal);
+    }
+
+    // 更新汇总显示
+    function updateSummaryDisplay(totalAccounts, totalInUse, totalNoConsume, totalLowConsume, totalNormal, mergeAbnormal) {
+        const summaryItems = document.querySelectorAll('.summary-item');
+        summaryItems[0].querySelector('.value').textContent = totalAccounts;
+        summaryItems[1].querySelector('.value').textContent = totalInUse;
+        summaryItems[1].querySelector('.percentage').textContent = calculatePercentage(totalInUse, totalAccounts) + '%';
+
+        if (mergeAbnormal) {
+            // 隐藏单独的不消耗和低消耗，显示合并后的消耗异常
+            summaryItems[2].querySelector('.value').textContent = totalNoConsume + totalLowConsume;
+            summaryItems[2].querySelector('.label').textContent = '消耗异常';
+            summaryItems[2].querySelector('.percentage').textContent = calculatePercentage(totalNoConsume + totalLowConsume, totalAccounts) + '%';
+            summaryItems[3].style.display = 'none';
+        } else {
+            summaryItems[2].querySelector('.value').textContent = totalNoConsume;
+            summaryItems[2].querySelector('.label').textContent = '不消耗数';
+            summaryItems[2].querySelector('.percentage').textContent = calculatePercentage(totalNoConsume, totalAccounts) + '%';
+            summaryItems[3].style.display = 'block';
+            summaryItems[3].querySelector('.value').textContent = totalLowConsume;
+            summaryItems[3].querySelector('.percentage').textContent = calculatePercentage(totalLowConsume, totalAccounts) + '%';
         }
-    </script>
+
+        summaryItems[4].querySelector('.value').textContent = totalNormal;
+        summaryItems[4].querySelector('.percentage').textContent = calculatePercentage(totalNormal, totalAccounts) + '%';
+    }
+</script>
 </body>
 </html>
