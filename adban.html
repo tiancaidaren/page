@@ -3,840 +3,716 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>广告账户封禁率分析系统</title>
+    <title>广告户封禁分析对比原型</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --primary-color: #4a90e2;
+            --border-color: #ddd;
+            --background-color: #f9f9f9;
+            --text-color: #333;
+            --danger-color: #e74c3c;
+            --success-color: #2ecc71;
+            --sub-row-bg: #f2f8ff;
         }
-        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-            background-color: #f5f7fa;
-            color: #333;
-        }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
             padding: 20px;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
         }
-        
-        header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px 0;
-            margin-bottom: 30px;
-            border-radius: 12px;
-            text-align: center;
-        }
-        
-        header h1 {
-            font-size: 28px;
-            font-weight: 600;
-        }
-        
-        .search-section {
-            background: white;
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            background: #fff;
             padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
-        
-        .search-form {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
+        h1 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-top: 0;
         }
-        
-        .form-group {
+        .filters-section {
             display: flex;
             flex-direction: column;
+            gap: 25px;
+            margin-bottom: 25px;
         }
-        
-        label {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 8px;
-            font-weight: 500;
+        .filter-group {
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: 6px;
         }
-        
-        input, select {
-            padding: 10px 15px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: border-color 0.3s;
+        .filter-group legend {
+            font-weight: bold;
+            color: var(--primary-color);
+            padding: 0 10px;
+            margin-left: 10px;
+            font-size: 1.1em;
         }
-        
-        input:focus, select:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        
-        input[type="number"] {
-            width: 100%;
-        }
-        
-        .checkbox-group {
+        .form-row {
             display: flex;
+            flex-wrap: wrap;
             align-items: center;
-            margin-top: 10px;
+            gap: 15px;
+            margin-bottom: 15px;
         }
-        
-        .checkbox-group input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            margin-right: 8px;
-            cursor: pointer;
+        .form-row:last-child {
+            margin-bottom: 0;
         }
-        
-        .checkbox-group label {
-            margin: 0;
-            cursor: pointer;
-            user-select: none;
-        }
-        
-        .btn {
-            padding: 12px 30px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
+        .form-row label {
             font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-        
-        .analysis-section {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            margin-bottom: 30px;
-        }
-        
-        .section-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 20px;
-            color: #333;
-        }
-        
-        .customer-comparison {
-            overflow-x: auto;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        th, td {
-            padding: 15px;
-            text-align: left;
-            border-bottom: 1px solid #e0e0e0;
             white-space: nowrap;
         }
-        
-        th {
-            background: #f8f9fa;
-            font-weight: 600;
-            color: #666;
-            position: sticky;
-            top: 0;
-            font-size: 13px;
+
+        /* --- STYLE UPDATE START --- */
+
+        /* 基础输入框样式 */
+        .form-row input[type="date"],
+        .form-row select,
+        .form-row textarea {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1em;
         }
-        
-        tr:hover {
-            background: #f8f9fa;
+
+        /* 只有需要拉伸的元素才设置 flex-grow */
+        .form-row input[type="date"],
+        .form-row textarea {
+            flex-grow: 1;
         }
-        
-        .customer-name {
-            font-weight: 600;
-            color: #333;
+
+        /* 为多选下拉框设置固定宽度和高度 */
+        .form-row select[multiple] {
+            width: 280px;
+            height: 100px;
         }
-        
-        .stage-cell {
-            text-align: center;
-            vertical-align: middle;
-        }
-        
-        .stage-count {
-            font-size: 18px;
-            font-weight: 700;
-            color: #333;
-        }
-        
-        .stage-rate {
-            font-size: 12px;
-            color: #666;
-            margin-top: 2px;
-        }
-        
-        .total-rate {
-            font-weight: 600;
-            font-size: 16px;
-        }
-        
-        .rate-high { color: #e74c3c; }
-        .rate-medium { color: #f39c12; }
-        .rate-low { color: #27ae60; }
-        
-        .time-rates-row {
-            background: #f8f9fa;
-            border-top: none !important;
-        }
-        
-        .time-rates-row td {
-            padding: 12px 15px;
-            text-align: center;
-            vertical-align: middle;
-        }
-        
-        .time-rate-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 8px;
-            background: white;
-            border-radius: 6px;
-            border: 1px solid #e0e0e0;
-            min-height: 60px;
-        }
-        
-        .time-rate-label {
-            font-size: 11px;
-            color: #666;
-            margin-bottom: 4px;
-            text-align: center;
-        }
-        
-        .time-rate-value {
-            font-size: 16px;
-            font-weight: 700;
-        }
-        
-        .badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-        
-        .badge-danger {
-            background: #ffe0e0;
-            color: #e74c3c;
-        }
-        
-        .badge-warning {
-            background: #fff3cd;
-            color: #f39c12;
-        }
-        
-        .badge-success {
-            background: #d4f4dd;
-            color: #27ae60;
-        }
-        
-        .badge-info {
-            background: #e3f2fd;
-            color: #2196f3;
-        }
-        
-        .stage-header {
-            background: #667eea;
-            color: white;
-            text-align: center;
-            font-weight: 600;
-            border-right: 2px solid white;
-        }
-        
-        .stage-header:last-child {
-            border-right: none;
-        }
-        
-        .summary-box {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .summary-item {
-            text-align: center;
-        }
-        
-        .summary-label {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 5px;
-        }
-        
-        .summary-value {
-            font-size: 24px;
-            font-weight: 700;
-        }
-        
-        .excluded-note {
-            font-size: 11px;
-            color: #999;
-            font-weight: normal;
-            display: block;
-            margin-top: 2px;
-        }
-        
-        .observation-note {
-            margin-top: 15px;
-            padding: 12px;
-            background: #e8f0ff;
-            border-radius: 8px;
-            font-size: 13px;
-            color: #1976d2;
+
+        /* 用于将标签和输入框组合在一起的容器 */
+        .form-field-group {
             display: flex;
             align-items: center;
             gap: 10px;
         }
-        
-        .observation-note::before {
-            content: "ℹ️";
-            font-size: 16px;
+
+        /* --- STYLE UPDATE END --- */
+
+        .form-row textarea {
+            height: 60px;
+            resize: vertical;
         }
-        
-        .rate-analysis-label {
-            font-weight: 600;
-            color: #667eea;
-            font-size: 13px;
-            padding: 10px;
-            background: white;
-            border-radius: 6px;
-            border: 1px solid #e0e0e0;
+        .filter-mode-switch {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .filter-mode-switch label {
             display: flex;
             align-items: center;
-            justify-content: center;
-            min-height: 60px;
+            gap: 5px;
+            cursor: pointer;
         }
-        
-        .main-data-row {
-            border-bottom: none !important;
+        .exclude-bm-ban {
+            border-left: 3px solid var(--primary-color);
+            padding-left: 20px;
+            margin-top: 20px;
         }
-        
-        .total-cell {
-            background: #f8f9fa;
+        .exclude-bm-ban label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+        .exclude-bm-ban input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .action-buttons button {
+            padding: 10px 20px;
+            font-size: 1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+        .action-buttons button.primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .action-buttons button.secondary {
+            background-color: #f0f0f0;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+        .action-buttons button:active {
+            transform: translateY(1px);
+        }
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95em;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 12px 15px;
+            text-align: left;
+        }
+        thead {
+            background-color: #f2f2f2;
+        }
+        th {
             font-weight: 600;
         }
-        
-        .no-data-cell {
-            background: transparent;
-            border: none;
+        tbody tr:nth-child(even) {
+            background-color: #fdfdfd;
         }
-        
+        .sub-row td:first-child {
+            padding-left: 35px;
+        }
+        .sub-row {
+            background-color: var(--sub-row-bg) !important;
+        }
+        .arrow {
+            font-weight: bold;
+            margin-left: 5px;
+        }
+        .arrow.up {
+            color: var(--danger-color);
+        }
+        .arrow.down {
+            color: var(--success-color);
+        }
+        .reference-note {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
+            display: block;
+        }
+        @media (max-width: 992px) {
+            .form-row {
+                gap: 20px;
+            }
+            .form-field-group {
+                flex-basis: 100%; /* 在较小屏幕上，让每个筛选器占满一行 */
+            }
+        }
         @media (max-width: 768px) {
-            .search-form {
-                grid-template-columns: 1fr;
+            body {
+                padding: 10px;
             }
-            
-            table {
-                font-size: 12px;
+            .container {
+                padding: 15px;
             }
-            
-            th, td {
-                padding: 10px 5px;
-            }
-            
-            .summary-box {
+            .form-row {
                 flex-direction: column;
-                gap: 15px;
+                align-items: stretch;
+                gap: 8px;
             }
-            
-            .time-rate-item {
-                min-height: 50px;
-                padding: 6px;
+            .action-buttons {
+                flex-direction: column;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>📊 广告账户封禁率分析系统.</h1>
-        </header>
-        
-        <!-- 查询区域 -->
-        <div class="search-section">
-            <h2 class="section-title">查询条件</h2>
-            <form class="search-form">
-                <div class="form-group">
-                    <label>查询时间段</label>
-                    <input type="date" value="2025-06-21">
+
+<div class="container">
+    <h1>广告户封禁分析对比</h1>
+
+    <div class="filters-section">
+        <!-- 筛选模式切换 -->
+        <fieldset class="filter-group">
+            <legend>筛选模式</legend>
+            <div class="filter-mode-switch">
+                <label>
+                    <input type="radio" name="filterMode" value="regular" checked> 常规筛选
+                </label>
+                <label>
+                    <input type="radio" name="filterMode" value="adAccount"> 广告户筛选
+                </label>
+            </div>
+        </fieldset>
+
+        <!-- 常规筛选 -->
+        <div id="regularFilters">
+            <fieldset class="filter-group">
+                <legend>常规筛选</legend>
+                <div class="form-row">
+                    <label for="dateStart">下户时间段:</label>
+                    <input type="date" id="dateStart" value="2025-06-01">
+                    <span>至</span>
+                    <input type="date" id="dateEnd" value="2025-06-30">
                 </div>
-                <div class="form-group">
-                    <label>至</label>
-                    <input type="date" value="2025-06-27">
-                </div>
-                <div class="form-group">
-                    <label>客户筛选</label>
-                    <select>
-                        <option value="">全部客户</option>
-                        <option value="A">客户A</option>
-                        <option value="B">客户B</option>
-                        <option value="C">客户C</option>
+                <div class="form-row">
+                    <label for="customers">客户:</label>
+                    <select id="customers" multiple>
+                        <option value="客户A" selected>客户A</option>
+                        <option value="客户B" selected>客户B</option>
+                        <option value="客户C" selected>客户C</option>
+                        <option value="客户D" selected>客户D</option>
+                        <option value="客户E" selected>客户E</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>观察天数</label>
-                    <input type="number" id="observeDays" value="7" min="1" max="30" placeholder="输入观察天数">
-                </div>
-                <div class="form-group">
-                    <label>&nbsp;</label>
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="ignoreBM">
-                        <label for="ignoreBM">忽略BM封禁</label>
-                    </div>
-                </div>
-            </form>
-            <button class="btn" onclick="search()">查询分析</button>
+            </fieldset>
         </div>
-        
-        <!-- 客户封禁情况对比 -->
-        <div class="analysis-section">
-            <h2 class="section-title">客户封禁情况对比</h2>
-            
-            <!-- 汇总信息 -->
-            <div class="summary-box">
-                <div class="summary-item">
-                    <div class="summary-label">查询期间总下户数</div>
-                    <div class="summary-value" style="color: #667eea;">75</div>
+
+        <!-- 广告户筛选 -->
+        <div id="adAccountFilters" style="display: none;">
+            <fieldset class="filter-group">
+                <legend>广告户筛选</legend>
+                <div class="form-row">
+                    <label for="adAccountIds">广告户 (空格分割):</label>
+                    <textarea id="adAccountIds" placeholder="输入广告户ID，用空格分隔...">AD10000 AD10001 AD10002 AD10003 AD10004 AD10005 AD10006 AD10007 AD10008 AD10009 AD10010 AD10011 AD10012 AD10013 AD10014 AD10015 AD10016 AD10017 AD10018 AD10019</textarea>
                 </div>
-                <div class="summary-item">
-                    <div class="summary-label">总封禁数</div>
-                    <div class="summary-value rate-high" id="totalBanned">28</div>
-                    <span class="excluded-note" id="bmExcludeNote" style="display: none;">(已排除BM封禁)</span>
+            </fieldset>
+        </div>
+
+        <!-- 影响因素 -->
+        <fieldset class="filter-group">
+            <legend>添加影响因素</legend>
+            <div class="form-row">
+                <label><input type="checkbox" id="factorOneShot"> 是否一刀流</label>
+            </div>
+
+            <!-- --- HTML UPDATE START --- -->
+            <!-- 将卡头和投放国家放在同一个 form-row 中 -->
+            <div class="form-row">
+                <div class="form-field-group">
+                    <label for="factorCardBin">卡头:</label>
+                    <select id="factorCardBin" multiple>
+                        <option value="424242">424242</option>
+                        <option value="515151">515151</option>
+                        <option value="555555">555555</option>
+                    </select>
                 </div>
-                <div class="summary-item">
-                    <div class="summary-label">总封禁率</div>
-                    <div class="summary-value rate-high" id="totalBannedRate">37.3%</div>
-                </div>
-                <div class="summary-item">
-                    <div class="summary-label">平均存活天数</div>
-                    <div class="summary-value rate-medium">4.2天</div>
+                <div class="form-field-group">
+                    <label for="factorCountry">投放国家:</label>
+                    <select id="factorCountry" multiple>
+                        <option value="美国">美国</option>
+                        <option value="英国">英国</option>
+                        <option value="加拿大">加拿大</option>
+                    </select>
                 </div>
             </div>
-            
-            <div class="observation-note">
-                当前观察天数设置为 <strong id="currentObserveDays">7</strong> 天，下方显示相应时间段的封禁率数据
+            <!-- --- HTML UPDATE END --- -->
+
+        </fieldset>
+
+        <!-- 通用操作 -->
+        <div>
+            <div class="exclude-bm-ban">
+                <label>
+                    <input type="checkbox" id="excludeBmBan">
+                    排除BM封禁 (BM被封, BM被扫, BM权限被踢)
+                </label>
+                <small style="display: block; margin-left: 26px; color: #666;">勾选后，封禁数和占比将只统计广告户自身原因的封禁，总下户数不变。</small>
             </div>
-            
-            <div class="customer-comparison">
-                <table>
-                    <thead>
-                        <tr>
-                            <th rowspan="2">客户</th>
-                            <th rowspan="2">下户总数</th>
-                            <th rowspan="2" class="total-cell">总封禁<br>个数/率</th>
-                            <th colspan="5" class="stage-header">各阶段封禁情况（个数/概率）</th>
-                        </tr>
-                        <tr>
-                            <th class="stage-header">下户阶段</th>
-                            <th class="stage-header" id="bmHeader">BM被扫</th>
-                            <th class="stage-header">未使用</th>
-                            <th class="stage-header">未消耗</th>
-                            <th class="stage-header">有消耗</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- 客户A -->
-                        <tr class="main-data-row">
-                            <td rowspan="2" class="customer-name">客户A</td>
-                            <td rowspan="2" style="text-align: center; font-weight: 600;">30</td>
-                            <td rowspan="2" class="total-cell" style="text-align: center;">
-                                <div class="total-rate rate-high" data-total="15" data-excluded="7">15</div>
-                                <div class="stage-rate ban-rate" data-total="50" data-excluded="23.3">50%</div>
-                            </td>
-                            <td class="stage-cell">
-                                <div class="stage-count">3</div>
-                                <div class="stage-rate">10%</div>
-                            </td>
-                            <td class="stage-cell bm-data">
-                                <div class="stage-count rate-high" data-count="8">8</div>
-                                <div class="stage-rate rate-high" data-rate="26.7">26.7%</div>
-                            </td>
-                            <td class="stage-cell">
-                                <div class="stage-count">2</div>
-                                <div class="stage-rate">6.7%</div>
-                            </td>
-                            <td class="stage-cell">
-                                <div class="stage-count">1</div>
-                                <div class="stage-rate">3.3%</div>
-                            </td>
-                            <td class="stage-cell">
-                                <div class="stage-count">1</div>
-                                <div class="stage-rate">3.3%</div>
-                            </td>
-                        </tr>
-                        <tr class="time-rates-row">
-                            <td>
-                                <div class="time-rate-item">
-                                    <div class="time-rate-label">下户1天</div>
-                                    <div class="time-rate-value rate-medium" data-with-bm="20" data-without-bm="10">20%</div>
-                                </div>
-                            </td>
-                            <td class="no-data-cell">
-                                <div class="rate-analysis-label">N天封禁率</div>
-                            </td>
-                            <td>
-                                <div class="time-rate-item">
-                                    <div class="time-rate-label">7天未使用</div>
-                                    <div class="time-rate-value rate-low">6.7%</div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="time-rate-item">
-                                    <div class="time-rate-label">7天未消耗</div>
-                                    <div class="time-rate-value rate-low">3.3%</div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="time-rate-item">
-                                    <div class="time-rate-label">7天有消耗</div>
-                                    <div class="time-rate-value rate-low">3.3%</div>
-                                </div>
-                            </td>
-                        </tr>
-                        
-                        <!-- 客户B -->
-                        <tr class="main-data-row">
-                            <td rowspan="2" class="customer-name">客户B</td>
-                            <td rowspan="2" style="text-align: center; font-weight: 600;">20</td>
-                            <td rowspan="2" class="total-cell" style="text-align: center;">
-                                <div class="total-rate rate-low" data-total="3" data-excluded="3">3</div>
-                                <div class="stage-rate ban-rate" data-total="15" data-excluded="15">15%</div>
-                            </td>
-                            <td class="stage-cell">
-                                <div class="stage-count">1</div>
-                                <div class="stage-rate">5%</div>
-                            </td>
-                            <td class="stage-cell bm-data">
-                                <div class="stage-count" data-count="0">0</div>
-                                <div class="stage-rate rate-low" data-rate="0">0%</div>
-                            </td>
-                            <td class="stage-cell">
-                                <div class="stage-count">2</div>
-                                <div class="stage-rate">10%</div>
-                            </td>
-                            <td class="stage-cell">
-                                <div class="stage-count">0</div>
-                                <div class="stage-rate">0%</div>
-                            </td>
-                            <td class="stage-cell">
-                                <div class="stage-count">0</div>
-                                <div class="stage-rate">0%</div>
-                            </td>
-                        </tr>
-                        <tr class="time-rates-row">
-                            <td>
-                                <div class="time-rate-item">
-                                    <div class="time-rate-label">下户1天</div>
-                                    <div class="time-rate-value rate-low" data-with-bm="5" data-without-bm="5">5%</div>
-                                </div>
-                            </td>
-                            <td class="no-data-cell">
-                                <div class="rate-analysis-label">N天封禁率</div>
-                            </td>
-                            <td>
-                                <div class="time-rate-item">
-                                    <div class="time-rate-label">7天未使用</div>
-                                    <div class="time-rate-value" style="color: #999;">待观察</div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="time-rate-item">
-                                    <div class="time-rate-label">7天未消耗</div>
-                                    <div class="time-rate-value" style="color: #999;">待观察</div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="time-rate-item">
-                                    <div class="time-rate-label">7天有消耗</div>
-                                    <div class="time-rate-value" style="color: #999;">待观察</div>
-                                </div>
-                            </td>
-                        </tr>
-                        
-                        <!-- 客户C -->
-                        <tr class="main-data-row">
-                            <td rowspan="2" class="customer-name">客户C</td>
-                            <td rowspan="2" style="text-align: center; font-weight: 600;">25</td>
-                            <td rowspan="2" class="total-cell" style="text-align: center;">
-                                <div class="total-rate rate-high" data-total="10" data-excluded="5">10</div>
-                                <div class="stage-rate ban-rate" data-total="40" data-excluded="20">40%</div>
-                            </td>
-                            <td class="stage-cell">
-                                <div class="stage-count">2</div>
-                                <div class="stage-rate">8%</div>
-                            </td>
-                            <td class="stage-cell bm-data">
-                                <div class="stage-count" data-count="5">5</div>
-                                <div class="stage-rate rate-medium" data-rate="20">20%</div>
-                            </td>
-                            <td class="stage-cell">
-                                <div class="stage-count">1</div>
-                                <div class="stage-rate">4%</div>
-                            </td>
-                            <td class="stage-cell">
-                                <div class="stage-count">1</div>
-                                <div class="stage-rate">4%</div>
-                            </td>
-                            <td class="stage-cell">
-                                <div class="stage-count">1</div>
-                                <div class="stage-rate">4%</div>
-                            </td>
-                        </tr>
-                        <tr class="time-rates-row">
-                            <td>
-                                <div class="time-rate-item">
-                                    <div class="time-rate-label">下户1天</div>
-                                    <div class="time-rate-value rate-low" data-with-bm="8" data-without-bm="8">8%</div>
-                                </div>
-                            </td>
-                            <td class="no-data-cell">
-                                <div class="rate-analysis-label">N天封禁率</div>
-                            </td>
-                            <td>
-                                <div class="time-rate-item">
-                                    <div class="time-rate-label">7天未使用</div>
-                                    <div class="time-rate-value rate-low">4%</div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="time-rate-item">
-                                    <div class="time-rate-label">7天未消耗</div>
-                                    <div class="time-rate-value rate-low">4%</div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="time-rate-item">
-                                    <div class="time-rate-label">7天有消耗</div>
-                                    <div class="time-rate-value rate-low">4%</div>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div class="action-buttons">
+                <button id="applyFilters" class="primary">应用筛选</button>
+                <button id="resetFilters" class="secondary">重置</button>
             </div>
         </div>
     </div>
-    
-    <script>
-        function updateObserveDays() {
-            const days = document.getElementById('observeDays').value || 7;
-            document.getElementById('currentObserveDays').textContent = days;
-            
-            // 更新时间率标签
-            document.querySelectorAll('.time-rate-label').forEach((label) => {
-                const text = label.textContent;
-                if (text.includes('天未使用')) {
-                    label.textContent = `${days}天未使用`;
-                } else if (text.includes('天未消耗')) {
-                    label.textContent = `${days}天未消耗`;
-                } else if (text.includes('天有消耗')) {
-                    label.textContent = `${days}天有消耗`;
-                }
-            });
+
+    <div class="table-container">
+        <table id="analysisTable">
+            <thead></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // --- 数据模型和模拟数据 ---
+    // 解释: 为了使原型能够完整交互，我们创建了一份详细的模拟数据。
+    // 每个对象代表一个广告户，包含了客户、下户日期、封禁状态、生命周期、以及各种影响因素。
+    const mockAdAccounts = [];
+    const customers = ['客户A', '客户B', '客户C', '客户D', '客户E'];
+    const banTypes = ['广告户停用', 'BM被封', 'BM被扫', 'BM权限被踢', null];
+    const bmBanTypes = ['BM被封', 'BM被扫', 'BM权限被踢'];
+    const lifecycle = ['未使用', '上广告未消耗', '上广告已消耗'];
+    const countries = ['美国', '英国', '加拿大'];
+    const cardBins = ['424242', '515151', '555555'];
+
+    // 生成2000个模拟广告户数据
+    for (let i = 0; i < 2000; i++) {
+        const customer = customers[i % customers.length];
+        const day = (i % 30) + 1;
+        const date = `2025-06-${String(day).padStart(2, '0')}`;
+        const banType = banTypes[Math.floor(Math.random() * banTypes.length)];
+
+        mockAdAccounts.push({
+            id: `AD${10000 + i}`,
+            customer: customer,
+            issueDate: date,
+            isBanned: !!banType,
+            banType: banType,
+            lifecycleStatus: lifecycle[Math.floor(Math.random() * lifecycle.length)],
+            isOneShot: Math.random() > 0.5,
+            cardBIN: cardBins[Math.floor(Math.random() * cardBins.length)],
+            country: countries[Math.floor(Math.random() * countries.length)],
+        });
+    }
+
+
+    // --- DOM 元素引用 ---
+    const elements = {
+        filterModeRadios: document.querySelectorAll('input[name="filterMode"]'),
+        regularFiltersDiv: document.getElementById('regularFilters'),
+        adAccountFiltersDiv: document.getElementById('adAccountFilters'),
+        dateStart: document.getElementById('dateStart'),
+        dateEnd: document.getElementById('dateEnd'),
+        customersSelect: document.getElementById('customers'),
+        adAccountIdsTextarea: document.getElementById('adAccountIds'),
+        excludeBmBanCheckbox: document.getElementById('excludeBmBan'),
+        factorOneShot: document.getElementById('factorOneShot'),
+        factorCardBin: document.getElementById('factorCardBin'),
+        factorCountry: document.getElementById('factorCountry'),
+        applyButton: document.getElementById('applyFilters'),
+        resetButton: document.getElementById('resetFilters'),
+        table: document.getElementById('analysisTable'),
+        tableHead: document.querySelector('#analysisTable thead'),
+        tableBody: document.querySelector('#analysisTable tbody'),
+    };
+
+
+    // --- 核心功能函数 ---
+
+    /**
+     * 格式化百分比
+     * @param {number} part - 分子
+     * @param {number} total - 分母
+     * @returns {string} - 格式如 " (10.0%)"
+     */
+    function formatPercent(part, total) {
+        if (total === 0) return " (0.0%)";
+        return ` (${((part / total) * 100).toFixed(1)}%)`;
+    }
+
+    /**
+     * 生成对比箭头
+     * @param {number} currentPercent - 当前百分比
+     * @param {number} basePercent - 基准百分比
+     * @returns {string} - HTML 字符串
+     */
+    function generateArrow(currentPercent, basePercent) {
+        if (currentPercent > basePercent) {
+            return '<span class="arrow up">↑</span>';
         }
-        
-        function toggleBMData() {
-            const ignoreBM = document.getElementById('ignoreBM').checked;
-            const bmCells = document.querySelectorAll('.bm-data');
-            const bmHeader = document.getElementById('bmHeader');
-            const bmNote = document.getElementById('bmExcludeNote');
-            
-            if (ignoreBM) {
-                // 隐藏BM相关数据
-                bmCells.forEach(cell => {
-                    cell.style.opacity = '0.3';
-                    cell.style.textDecoration = 'line-through';
-                });
-                bmHeader.style.opacity = '0.5';
-                bmNote.style.display = 'inline-block';
-                
-                // 更新总封禁数和封禁率
-                document.querySelectorAll('.total-rate').forEach(rate => {
-                    const excluded = parseInt(rate.dataset.excluded);
-                    rate.textContent = excluded;
-                });
-                
-                document.querySelectorAll('.ban-rate').forEach(rate => {
-                    const excluded = parseFloat(rate.dataset.excluded);
-                    rate.textContent = excluded + '%';
-                });
-                
-                // 更新下户1天的数据（扣除BM被扫的影响）
-                document.querySelectorAll('.time-rate-value').forEach(value => {
-                    if (value.dataset.withoutBm) {
-                        value.textContent = value.dataset.withoutBm + '%';
-                    }
-                });
-                
-                // 更新汇总数据
-                let totalBanned = 0;
-                document.querySelectorAll('.total-rate').forEach(rate => {
-                    totalBanned += parseInt(rate.textContent);
-                });
-                document.getElementById('totalBanned').textContent = totalBanned;
-                document.getElementById('totalBannedRate').textContent = (totalBanned / 75 * 100).toFixed(1) + '%';
-            } else {
-                // 显示BM相关数据
-                bmCells.forEach(cell => {
-                    cell.style.opacity = '1';
-                    cell.style.textDecoration = 'none';
-                });
-                bmHeader.style.opacity = '1';
-                bmNote.style.display = 'none';
-                
-                // 恢复原始总数
-                document.querySelectorAll('.total-rate').forEach(rate => {
-                    const total = parseInt(rate.dataset.total);
-                    rate.textContent = total;
-                });
-                
-                document.querySelectorAll('.ban-rate').forEach(rate => {
-                    const total = parseFloat(rate.dataset.total);
-                    rate.textContent = total + '%';
-                });
-                
-                // 恢复下户1天的原始数据
-                document.querySelectorAll('.time-rate-value').forEach(value => {
-                    if (value.dataset.withBm) {
-                        value.textContent = value.dataset.withBm + '%';
-                    }
-                });
-                
-                // 恢复汇总数据
-                document.getElementById('totalBanned').textContent = '28';
-                document.getElementById('totalBannedRate').textContent = '37.3%';
-            }
+        if (currentPercent < basePercent) {
+            return '<span class="arrow down">↓</span>';
         }
-        
-        function search() {
-            updateObserveDays();
-            toggleBMData();
-            
-            // 模拟查询动画
-            const tables = document.querySelectorAll('table');
-            tables.forEach(table => {
-                table.style.opacity = '0.5';
-                setTimeout(() => {
-                    table.style.opacity = '1';
-                }, 300);
-            });
-            
-            // 显示查询结果提示
-            const toast = document.createElement('div');
-            toast.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: #27ae60;
-                color: white;
-                padding: 15px 25px;
-                border-radius: 8px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                z-index: 1000;
-                animation: slideIn 0.3s ease;
-            `;
-            toast.textContent = '查询完成，已更新分析结果';
-            document.body.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.remove();
-            }, 3000);
-        }
-        
-        // 监听观察天数变化
-        document.getElementById('observeDays').addEventListener('input', updateObserveDays);
-        
-        // 监听忽略BM复选框
-        document.getElementById('ignoreBM').addEventListener('change', toggleBMData);
-        
-        // 添加动画样式
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
-                to {
-                    transform: translateX(0);
-                    opacity: 1;
-                }
+        return '';
+    }
+
+    /**
+     * 聚合数据
+     * @param {Array} accounts - 广告户数据数组
+     * @param {boolean} excludeBmBans - 是否排除BM封禁
+     * @returns {object} - 聚合后的统计数据
+     */
+    function aggregateData(accounts, excludeBmBans) {
+        const totalCount = accounts.length;
+
+        const getBannedAccounts = (accs) => {
+            if (excludeBmBans) {
+                return accs.filter(a => a.isBanned && !bmBanTypes.includes(a.banType));
             }
-            
-            table {
-                transition: opacity 0.3s;
+            return accs.filter(a => a.isBanned);
+        };
+
+        const bannedAccounts = getBannedAccounts(accounts);
+        const totalBanned = bannedAccounts.length;
+        const unusedBanned = bannedAccounts.filter(a => a.lifecycleStatus === '未使用').length;
+        const noSpendBanned = bannedAccounts.filter(a => a.lifecycleStatus === '上广告未消耗').length;
+        const spentBanned = bannedAccounts.filter(a => a.lifecycleStatus === '上广告已消耗').length;
+
+        return {
+            totalCount,
+            totalBanned,
+            unusedBanned,
+            noSpendBanned,
+            spentBanned,
+            totalBannedPercent: totalCount > 0 ? (totalBanned / totalCount) * 100 : 0,
+            unusedBannedPercent: totalCount > 0 ? (unusedBanned / totalCount) * 100 : 0,
+            noSpendBannedPercent: totalCount > 0 ? (noSpendBanned / totalCount) * 100 : 0,
+            spentBannedPercent: totalCount > 0 ? (spentBanned / totalCount) * 100 : 0,
+        };
+    }
+
+
+    /**
+     * 渲染常规筛选表格
+     * @param {object} filters - 当前筛选条件
+     */
+    function renderRegularTable(filters) {
+        elements.tableHead.innerHTML = `
+        <tr>
+            <th>客户</th>
+            <th>总下户数</th>
+            <th>总封禁数 (占比)</th>
+            <th>未使用被封禁 (占比)</th>
+            <th>未消耗封禁 (占比)</th>
+            <th>已消耗封禁 (占比)</th>
+        </tr>
+    `;
+        elements.tableBody.innerHTML = '';
+
+        const selectedCustomers = Array.from(elements.customersSelect.selectedOptions).map(o => o.value);
+        const filteredAccounts = mockAdAccounts.filter(acc => {
+            const date = new Date(acc.issueDate);
+            const start = new Date(filters.dateStart);
+            const end = new Date(filters.dateEnd);
+            return date >= start && date <= end && selectedCustomers.includes(acc.customer);
+        });
+
+        const accountsByCustomer = filteredAccounts.reduce((acc, current) => {
+            if (!acc[current.customer]) {
+                acc[current.customer] = [];
             }
-            
-            .time-rate-value {
-                transition: all 0.3s;
-            }
-            
-            .stage-count {
-                animation: fadeIn 0.5s ease;
-            }
-            
-            @keyframes fadeIn {
-                from {
-                    opacity: 0;
-                    transform: scale(0.8);
-                }
-                to {
-                    opacity: 1;
-                    transform: scale(1);
-                }
-            }
-            
-            .bm-data {
-                transition: all 0.3s ease;
-            }
-            
-            .time-rate-item:hover {
-                transform: scale(1.05);
-                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-                transition: all 0.2s ease;
-            }
-            
-            .total-cell {
-                position: relative;
-            }
-            
-            .total-cell::before {
-                content: '';
-                position: absolute;
-                left: 0;
-                top: 50%;
-                transform: translateY(-50%);
-                width: 3px;
-                height: 60%;
-                background: #667eea;
-                border-radius: 2px;
-            }
+            acc[current.customer].push(current);
+            return acc;
+        }, {});
+
+        for (const customerName of selectedCustomers) {
+            const customerAccounts = accountsByCustomer[customerName] || [];
+            const customerStats = aggregateData(customerAccounts, filters.excludeBmBans);
+
+            const mainRow = document.createElement('tr');
+            mainRow.innerHTML = `
+            <td>${customerName}</td>
+            <td>${customerStats.totalCount}</td>
+            <td>${customerStats.totalBanned}${formatPercent(customerStats.totalBanned, customerStats.totalCount)}</td>
+            <td>${customerStats.unusedBanned}${formatPercent(customerStats.unusedBanned, customerStats.totalCount)}</td>
+            <td>${customerStats.noSpendBanned}${formatPercent(customerStats.noSpendBanned, customerStats.totalCount)}</td>
+            <td>${customerStats.spentBanned}${formatPercent(customerStats.spentBanned, customerStats.totalCount)}</td>
         `;
-        document.head.appendChild(style);
-    </script>
+            elements.tableBody.appendChild(mainRow);
+
+            renderFactorRows(customerAccounts, customerStats, filters);
+        }
+    }
+
+    /**
+     * 渲染影响因素的子行
+     * @param {Array} baseAccounts - 进行细分的数据集 (如某个客户的所有账户, 或所有要观察的账户)
+     * @param {object} baseStats - 基准统计数据 (用于对比生成箭头)
+     * @param {object} filters - 当前筛选条件
+     */
+    function renderFactorRows(baseAccounts, baseStats, filters) {
+        const createSubRow = (label, factorStats, baseStats) => {
+            const row = document.createElement('tr');
+            row.className = 'sub-row';
+            row.innerHTML = `
+            <td>└ ${label}</td>
+            <td>${factorStats.totalCount}</td>
+            <td>${factorStats.totalBanned}${formatPercent(factorStats.totalBanned, factorStats.totalCount)} ${generateArrow(factorStats.totalBannedPercent, baseStats.totalBannedPercent)}</td>
+            <td>${factorStats.unusedBanned}${formatPercent(factorStats.unusedBanned, factorStats.totalCount)} ${generateArrow(factorStats.unusedBannedPercent, baseStats.unusedBannedPercent)}</td>
+            <td>${factorStats.noSpendBanned}${formatPercent(factorStats.noSpendBanned, factorStats.totalCount)} ${generateArrow(factorStats.noSpendBannedPercent, baseStats.noSpendBannedPercent)}</td>
+            <td>${factorStats.spentBanned}${formatPercent(factorStats.spentBanned, factorStats.totalCount)} ${generateArrow(factorStats.spentBannedPercent, baseStats.spentBannedPercent)}</td>
+        `;
+            return row;
+        };
+
+        if (filters.factorOneShot) {
+            const factorAccounts = baseAccounts.filter(a => a.isOneShot);
+            if (factorAccounts.length > 0) {
+                const factorStats = aggregateData(factorAccounts, filters.excludeBmBans);
+                elements.tableBody.appendChild(createSubRow('一刀流', factorStats, baseStats));
+            }
+        }
+
+        if (filters.factorCardBin.length > 0) {
+            for (const bin of filters.factorCardBin) {
+                const factorAccounts = baseAccounts.filter(a => a.cardBIN === bin);
+                if (factorAccounts.length > 0) {
+                    const factorStats = aggregateData(factorAccounts, filters.excludeBmBans);
+                    elements.tableBody.appendChild(createSubRow(`卡头: ${bin}`, factorStats, baseStats));
+                }
+            }
+        }
+
+        if (filters.factorCountry.length > 0) {
+            for (const country of filters.factorCountry) {
+                const factorAccounts = baseAccounts.filter(a => a.country === country);
+                if (factorAccounts.length > 0) {
+                    const factorStats = aggregateData(factorAccounts, filters.excludeBmBans);
+                    elements.tableBody.appendChild(createSubRow(`投放国家: ${country}`, factorStats, baseStats));
+                }
+            }
+        }
+    }
+
+    /**
+     * 渲染广告户筛选表格
+     * @param {object} filters - 当前筛选条件
+     */
+    function renderAdAccountTable(filters) {
+        elements.tableHead.innerHTML = `
+        <tr>
+            <th>数据类型</th>
+            <th>总下户数</th>
+            <th>总封禁数 (占比)</th>
+            <th>未使用被封禁 (占比)</th>
+            <th>未消耗封禁 (占比)</th>
+            <th>已消耗封禁 (占比)</th>
+        </tr>
+    `;
+        elements.tableBody.innerHTML = '';
+
+        const adAccountIds = filters.adAccountIds.split(/\s+/).filter(id => id.trim() !== '');
+        if (adAccountIds.length === 0) {
+            elements.tableBody.innerHTML = '<tr><td colspan="6">请输入要观察的广告户ID。</td></tr>';
+            return;
+        }
+
+        const observedAccounts = mockAdAccounts.filter(a => adAccountIds.includes(a.id));
+        if (observedAccounts.length === 0) {
+            elements.tableBody.innerHTML = '<tr><td colspan="6">未在模拟数据中找到您输入的广告户ID。</td></tr>';
+            return;
+        }
+        const observedStats = aggregateData(observedAccounts, filters.excludeBmBans);
+
+        // 计算参考数据
+        const observedDates = observedAccounts.map(a => new Date(a.issueDate)).sort((a, b) => a - b);
+        let refStartDate = observedDates[0];
+        let refEndDate = observedDates[observedDates.length - 1];
+
+        const diffTime = Math.abs(refEndDate - refStartDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays < 3) {
+            refStartDate = new Date(refStartDate.getTime() - 3 * 24 * 60 * 60 * 1000);
+        }
+
+        const refStartDateStr = refStartDate.toISOString().split('T')[0];
+        const refEndDateStr = refEndDate.toISOString().split('T')[0];
+
+        const referenceAccounts = mockAdAccounts.filter(acc => {
+            const date = new Date(acc.issueDate);
+            return date >= refStartDate && date <= refEndDate;
+        });
+        const referenceStats = aggregateData(referenceAccounts, filters.excludeBmBans);
+
+        // 渲染表格行
+        const referenceRow = document.createElement('tr');
+        referenceRow.innerHTML = `
+        <td>
+            参考数据
+            <span class="reference-note">
+                *注释: 参考数据的时间段是根据您所选广告户的最早和最晚下户日期 (${refStartDateStr} 至 ${refEndDateStr}) 动态计算的。
+            </span>
+        </td>
+        <td>${referenceStats.totalCount}</td>
+        <td>${referenceStats.totalBanned}${formatPercent(referenceStats.totalBanned, referenceStats.totalCount)}</td>
+        <td>${referenceStats.unusedBanned}${formatPercent(referenceStats.unusedBanned, referenceStats.totalCount)}</td>
+        <td>${referenceStats.noSpendBanned}${formatPercent(referenceStats.noSpendBanned, referenceStats.totalCount)}</td>
+        <td>${referenceStats.spentBanned}${formatPercent(referenceStats.spentBanned, referenceStats.totalCount)}</td>
+    `;
+        elements.tableBody.appendChild(referenceRow);
+
+        const observedRow = document.createElement('tr');
+        observedRow.innerHTML = `
+        <td>要观察的户</td>
+        <td>${observedStats.totalCount}</td>
+        <td>${observedStats.totalBanned}${formatPercent(observedStats.totalBanned, observedStats.totalCount)} ${generateArrow(observedStats.totalBannedPercent, referenceStats.totalBannedPercent)}</td>
+        <td>${observedStats.unusedBanned}${formatPercent(observedStats.unusedBanned, observedStats.totalCount)} ${generateArrow(observedStats.unusedBannedPercent, referenceStats.unusedBannedPercent)}</td>
+        <td>${observedStats.noSpendBanned}${formatPercent(observedStats.noSpendBanned, observedStats.totalCount)} ${generateArrow(observedStats.noSpendBannedPercent, referenceStats.noSpendBannedPercent)}</td>
+        <td>${observedStats.spentBanned}${formatPercent(observedStats.spentBanned, observedStats.totalCount)} ${generateArrow(observedStats.spentBannedPercent, referenceStats.spentBannedPercent)}</td>
+    `;
+        elements.tableBody.appendChild(observedRow);
+
+        // 渲染影响因素子行 (基于要观察的户)
+        // 解释: 此处调用 renderFactorRows, 将 "要观察的户" 作为基础数据进行细分对比。
+        renderFactorRows(observedAccounts, observedStats, filters);
+    }
+
+    /**
+     * 主渲染函数
+     */
+    function render() {
+        const currentMode = document.querySelector('input[name="filterMode"]:checked').value;
+
+        const filters = {
+            mode: currentMode,
+            dateStart: elements.dateStart.value,
+            dateEnd: elements.dateEnd.value,
+            customers: Array.from(elements.customersSelect.selectedOptions).map(o => o.value),
+            adAccountIds: elements.adAccountIdsTextarea.value,
+            excludeBmBans: elements.excludeBmBanCheckbox.checked,
+            factorOneShot: elements.factorOneShot.checked,
+            factorCardBin: Array.from(elements.factorCardBin.selectedOptions).map(o => o.value),
+            factorCountry: Array.from(elements.factorCountry.selectedOptions).map(o => o.value),
+        };
+
+        if (currentMode === 'regular') {
+            renderRegularTable(filters);
+        } else {
+            renderAdAccountTable(filters);
+        }
+    }
+
+
+    // --- 事件监听器 ---
+
+    // 切换筛选模式
+    elements.filterModeRadios.forEach(radio => {
+        radio.addEventListener('change', () => {
+            const isRegular = radio.value === 'regular';
+            elements.regularFiltersDiv.style.display = isRegular ? 'block' : 'none';
+            elements.adAccountFiltersDiv.style.display = isRegular ? 'none' : 'block';
+            render(); // 切换后立即重新渲染
+        });
+    });
+
+    // 应用筛选按钮
+    elements.applyButton.addEventListener('click', render);
+
+    // 重置按钮
+    elements.resetButton.addEventListener('click', () => {
+        // 重置为默认状态并重新渲染
+        document.querySelector('input[name="filterMode"][value="regular"]').checked = true;
+        elements.regularFiltersDiv.style.display = 'block';
+        elements.adAccountFiltersDiv.style.display = 'none';
+
+        elements.dateStart.value = "2025-06-01";
+        elements.dateEnd.value = "2025-06-30";
+        Array.from(elements.customersSelect.options).forEach(o => o.selected = true);
+        elements.adAccountIdsTextarea.value = 'AD10000 AD10001 AD10002 AD10003 AD10004 AD10005 AD10006 AD10007 AD10008 AD10009 AD10010 AD10011 AD10012 AD10013 AD10014 AD10015 AD10016 AD10017 AD10018 AD10019';
+        elements.excludeBmBanCheckbox.checked = false;
+        elements.factorOneShot.checked = false;
+        Array.from(elements.factorCardBin.options).forEach(o => o.selected = false);
+        Array.from(elements.factorCountry.options).forEach(o => o.selected = false);
+
+        render();
+    });
+
+
+    // --- 页面初始化 ---
+    document.addEventListener('DOMContentLoaded', () => {
+        // 页面加载后立即执行一次渲染，显示默认数据
+        render();
+    });
+
+</script>
+
 </body>
 </html>
