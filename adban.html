@@ -8,212 +8,182 @@
         :root {
             --primary-color: #4a90e2;
             --border-color: #ddd;
-            --background-color: #f9f9f9;
+            --bg-color: #f9f9f9;
             --text-color: #333;
-            --danger-color: #e74c3c;
-            --success-color: #2ecc71;
-            --sub-row-bg: #f2f8ff;
+            --danger-color: #d0021b;
+            --success-color: #4caf50;
+            --sub-text-color: #777;
+            --header-bg-color: #f2f2f2;
         }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             margin: 0;
             padding: 20px;
-            background-color: var(--background-color);
+            background-color: var(--bg-color);
             color: var(--text-color);
             line-height: 1.6;
         }
+
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: auto;
             background: #fff;
             padding: 25px;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
-        h1 {
+
+        h1, h3 {
             color: var(--primary-color);
             border-bottom: 2px solid var(--border-color);
             padding-bottom: 10px;
-            margin-top: 0;
         }
-        .filters-section {
-            display: flex;
-            flex-direction: column;
-            gap: 25px;
-            margin-bottom: 25px;
-        }
-        .filter-group {
-            border: 1px solid var(--border-color);
-            padding: 20px;
-            border-radius: 6px;
-        }
-        .filter-group legend {
-            font-weight: bold;
-            color: var(--primary-color);
-            padding: 0 10px;
-            margin-left: 10px;
-            font-size: 1.1em;
-        }
-        .form-row {
+
+        .filter-section {
             display: flex;
             flex-wrap: wrap;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-        .form-row:last-child {
-            margin-bottom: 0;
-        }
-        .form-row label {
-            font-weight: 500;
-            white-space: nowrap;
+            gap: 20px;
+            margin-bottom: 25px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: #fdfdfd;
         }
 
-        /* --- STYLE UPDATE START --- */
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 200px;
+        }
 
-        /* 基础输入框样式 */
-        .form-row input[type="date"],
-        .form-row select,
-        .form-row textarea {
-            padding: 8px 12px;
+        .filter-group.full-width {
+            flex-basis: 100%;
+        }
+
+        .filter-group label {
+            font-weight: bold;
+            font-size: 0.9em;
+            color: var(--sub-text-color);
+        }
+
+        .filter-group input[type="text"],
+        .filter-group input[type="date"],
+        .filter-group select,
+        .filter-group textarea {
+            padding: 10px;
             border: 1px solid var(--border-color);
             border-radius: 4px;
             font-size: 1em;
+            width: 100%;
+            box-sizing: border-box;
         }
 
-        /* 只有需要拉伸的元素才设置 flex-grow */
-        .form-row input[type="date"],
-        .form-row textarea {
-            flex-grow: 1;
+        .filter-group textarea {
+            height: 80px;
+            resize: vertical;
         }
 
-        /* 为多选下拉框设置固定宽度和高度 */
-        .form-row select[multiple] {
-            width: 280px;
-            height: 100px;
+        .filter-mode-switcher {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 15px;
         }
 
-        /* 用于将标签和输入框组合在一起的容器 */
-        .form-field-group {
+        .filter-mode-switcher label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .filter-mode-switcher input[type="radio"] {
+            margin-right: 5px;
+        }
+
+        .checkbox-group {
             display: flex;
             align-items: center;
             gap: 10px;
+            padding-top: 25px;
         }
 
-        /* --- STYLE UPDATE END --- */
-
-        .form-row textarea {
-            height: 60px;
-            resize: vertical;
-        }
-        .filter-mode-switch {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        .filter-mode-switch label {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            cursor: pointer;
-        }
-        .exclude-bm-ban {
-            border-left: 3px solid var(--primary-color);
-            padding-left: 20px;
-            margin-top: 20px;
-        }
-        .exclude-bm-ban label {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: bold;
-            color: var(--text-color);
-        }
-        .exclude-bm-ban input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-        }
-        .action-buttons {
-            display: flex;
-            gap: 15px;
-            margin-top: 20px;
-        }
-        .action-buttons button {
-            padding: 10px 20px;
-            font-size: 1em;
-            font-weight: bold;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.1s;
-        }
-        .action-buttons button.primary {
+        button#query-btn {
+            padding: 12px 25px;
             background-color: var(--primary-color);
             color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s;
+            align-self: flex-end;
         }
-        .action-buttons button.secondary {
-            background-color: #f0f0f0;
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
+
+        button#query-btn:hover {
+            background-color: #357abd;
         }
-        .action-buttons button:active {
-            transform: translateY(1px);
-        }
-        .table-container {
-            overflow-x: auto;
+
+        .results-section {
             margin-top: 20px;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.95em;
+            margin-top: 20px;
         }
+
         th, td {
             border: 1px solid var(--border-color);
-            padding: 12px 15px;
+            padding: 12px;
             text-align: left;
+            vertical-align: middle;
         }
-        thead {
-            background-color: #f2f2f2;
-        }
+
         th {
-            font-weight: 600;
+            background-color: var(--header-bg-color);
+            font-weight: bold;
         }
-        tbody tr:nth-child(even) {
+
+        tr:nth-child(even) {
             background-color: #fdfdfd;
         }
+
         .sub-row td:first-child {
-            padding-left: 35px;
+            padding-left: 40px;
         }
-        .sub-row {
-            background-color: var(--sub-row-bg) !important;
-        }
+
         .arrow {
             font-weight: bold;
             margin-left: 5px;
         }
+
         .arrow.up {
             color: var(--danger-color);
         }
+
         .arrow.down {
             color: var(--success-color);
         }
-        .reference-note {
+
+        .note {
             font-size: 0.85em;
-            color: #666;
+            color: var(--sub-text-color);
             margin-top: 5px;
-            display: block;
         }
-        @media (max-width: 992px) {
-            .form-row {
-                gap: 20px;
-            }
-            .form-field-group {
-                flex-basis: 100%; /* 在较小屏幕上，让每个筛选器占满一行 */
-            }
+
+        #reference-data-note {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #eef5fd;
+            border-left: 4px solid var(--primary-color);
         }
+
+        /* Responsive Design */
         @media (max-width: 768px) {
             body {
                 padding: 10px;
@@ -221,13 +191,21 @@
             .container {
                 padding: 15px;
             }
-            .form-row {
+            .filter-section {
                 flex-direction: column;
-                align-items: stretch;
-                gap: 8px;
             }
-            .action-buttons {
-                flex-direction: column;
+            .filter-group {
+                width: 100%;
+            }
+            button#query-btn {
+                width: 100%;
+            }
+            th, td {
+                padding: 8px;
+                font-size: 0.9em;
+            }
+            .sub-row td:first-child {
+                padding-left: 20px;
             }
         }
     </style>
@@ -235,483 +213,474 @@
 <body>
 
 <div class="container">
-    <h1>广告户封禁分析对比</h1>
+    <h1>封禁分析对比设计方案</h1>
 
-    <div class="filters-section">
-        <!-- 筛选模式切换 -->
-        <fieldset class="filter-group">
-            <legend>筛选模式</legend>
-            <div class="filter-mode-switch">
-                <label>
-                    <input type="radio" name="filterMode" value="regular" checked> 常规筛选
-                </label>
-                <label>
-                    <input type="radio" name="filterMode" value="adAccount"> 广告户筛选
-                </label>
+    <h3>筛选条件</h3>
+    <div class="filter-section">
+
+        <div class="filter-group full-width">
+            <div class="filter-mode-switcher">
+                <strong>筛选模式:</strong>
+                <label><input type="radio" name="filterMode" value="regular" checked> 常规筛选</label>
+                <label><input type="radio" name="filterMode" value="adAccount"> 广告户筛选</label>
             </div>
-        </fieldset>
+        </div>
 
         <!-- 常规筛选 -->
-        <div id="regularFilters">
-            <fieldset class="filter-group">
-                <legend>常规筛选</legend>
-                <div class="form-row">
-                    <label for="dateStart">下户时间段:</label>
-                    <input type="date" id="dateStart" value="2025-06-01">
-                    <span>至</span>
-                    <input type="date" id="dateEnd" value="2025-06-30">
-                </div>
-                <div class="form-row">
-                    <label for="customers">客户:</label>
-                    <select id="customers" multiple>
-                        <option value="客户A" selected>客户A</option>
-                        <option value="客户B" selected>客户B</option>
-                        <option value="客户C" selected>客户C</option>
-                        <option value="客户D" selected>客户D</option>
-                        <option value="客户E" selected>客户E</option>
-                    </select>
-                </div>
-            </fieldset>
+        <div id="regular-filters" class="filter-group-wrapper" style="display: flex; flex-wrap: wrap; gap: 20px; width: 100%;">
+            <div class="filter-group">
+                <label for="date-range-start">下户时间段</label>
+                <input type="date" id="date-range-start">
+                <input type="date" id="date-range-end">
+            </div>
+            <div class="filter-group">
+                <label for="client-select">客户</label>
+                <select id="client-select" multiple></select>
+            </div>
         </div>
 
         <!-- 广告户筛选 -->
-        <div id="adAccountFilters" style="display: none;">
-            <fieldset class="filter-group">
-                <legend>广告户筛选</legend>
-                <div class="form-row">
-                    <label for="adAccountIds">广告户 (空格分割):</label>
-                    <textarea id="adAccountIds" placeholder="输入广告户ID，用空格分隔...">AD10000 AD10001 AD10002 AD10003 AD10004 AD10005 AD10006 AD10007 AD10008 AD10009 AD10010 AD10011 AD10012 AD10013 AD10014 AD10015 AD10016 AD10017 AD10018 AD10019</textarea>
-                </div>
-            </fieldset>
+        <div id="ad-account-filters" class="filter-group-wrapper" style="display: none; width: 100%;">
+            <div class="filter-group full-width">
+                <label for="ad-account-input">广告户 (用空格或换行分割)</label>
+                <textarea id="ad-account-input" placeholder="输入广告户ID..."></textarea>
+            </div>
         </div>
 
-        <!-- 影响因素 -->
-        <fieldset class="filter-group">
-            <legend>添加影响因素</legend>
-            <div class="form-row">
-                <label><input type="checkbox" id="factorOneShot"> 是否一刀流</label>
-            </div>
+        <div class="filter-group full-width" style="border-top: 1px dashed var(--border-color); padding-top: 20px; margin-top: 10px;">
+            <label for="ban-type-select">封禁类型 (可多选, 不选则统计所有类型)</label>
+            <select id="ban-type-select" multiple>
+                <option value="ad_account_disabled" selected>广告户被封</option>
+                <option value="bm_banned" selected>BM被封</option>
+                <option value="bm_swept" selected>BM被扫</option>
+                <option value="bm_kicked" selected>BM权限被踢</option>
+            </select>
+            <div class="note">注意：此筛选仅影响各类“封禁数”及其占比，不影响“总下户数”。</div>
+        </div>
 
-            <!-- --- HTML UPDATE START --- -->
-            <!-- 将卡头和投放国家放在同一个 form-row 中 -->
-            <div class="form-row">
-                <div class="form-field-group">
-                    <label for="factorCardBin">卡头:</label>
-                    <select id="factorCardBin" multiple>
-                        <option value="424242">424242</option>
-                        <option value="515151">515151</option>
-                        <option value="555555">555555</option>
-                    </select>
-                </div>
-                <div class="form-field-group">
-                    <label for="factorCountry">投放国家:</label>
-                    <select id="factorCountry" multiple>
-                        <option value="美国">美国</option>
-                        <option value="英国">英国</option>
-                        <option value="加拿大">加拿大</option>
-                    </select>
-                </div>
-            </div>
-            <!-- --- HTML UPDATE END --- -->
+        <div class="filter-group full-width">
+            <h3>影响因素 (可选)</h3>
+        </div>
 
-        </fieldset>
+        <div class="filter-group">
+            <div class="checkbox-group">
+                <input type="checkbox" id="is-oneshot-checkbox">
+                <label for="is-oneshot-checkbox">是否一刀流</label>
+            </div>
+        </div>
+        <div class="filter-group">
+            <label for="card-bin-select">卡头</label>
+            <select id="card-bin-select" multiple></select>
+        </div>
+        <div class="filter-group">
+            <label for="country-select">投放国家</label>
+            <select id="country-select" multiple></select>
+        </div>
 
-        <!-- 通用操作 -->
-        <div>
-            <div class="exclude-bm-ban">
-                <label>
-                    <input type="checkbox" id="excludeBmBan">
-                    排除BM封禁 (BM被封, BM被扫, BM权限被踢)
-                </label>
-                <small style="display: block; margin-left: 26px; color: #666;">勾选后，封禁数和占比将只统计广告户自身原因的封禁，总下户数不变。</small>
-            </div>
-            <div class="action-buttons">
-                <button id="applyFilters" class="primary">应用筛选</button>
-                <button id="resetFilters" class="secondary">重置</button>
-            </div>
+        <div class="filter-group" style="justify-content: flex-end;">
+            <button id="query-btn">查询</button>
         </div>
     </div>
 
-    <div class="table-container">
-        <table id="analysisTable">
-            <thead></thead>
-            <tbody></tbody>
-        </table>
+    <div class="results-section">
+        <h3>分析结果</h3>
+        <div id="reference-data-note" style="display: none;"></div>
+        <div id="table-container">
+            <!-- Table will be generated by JavaScript -->
+        </div>
     </div>
 </div>
 
 <script>
-    // --- 数据模型和模拟数据 ---
-    // 解释: 为了使原型能够完整交互，我们创建了一份详细的模拟数据。
-    // 每个对象代表一个广告户，包含了客户、下户日期、封禁状态、生命周期、以及各种影响因素。
-    const mockAdAccounts = [];
-    const customers = ['客户A', '客户B', '客户C', '客户D', '客户E'];
-    const banTypes = ['广告户停用', 'BM被封', 'BM被扫', 'BM权限被踢', null];
-    const bmBanTypes = ['BM被封', 'BM被扫', 'BM权限被踢'];
-    const lifecycle = ['未使用', '上广告未消耗', '上广告已消耗'];
-    const countries = ['美国', '英国', '加拿大'];
-    const cardBins = ['424242', '515151', '555555'];
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- 模拟数据 ---
+        // 解释:
+        // - id: 广告户唯一标识
+        // - client: 所属客户
+        // - deliveryDate: 下户时间
+        // - status: 广告户生命周期状态 ('unused', 'no_spend', 'with_spend')
+        // - isBanned: 是否被封禁
+        // - banType: 封禁类型 ('ad_account_disabled', 'bm_banned', 'bm_swept', 'bm_kicked')
+        // - isOneShot: 是否一刀流
+        // - cardBin: 卡头 (6位数字)
+        // - country: 投放国家
+        const MOCK_DATA = [];
+        const CLIENTS = ['客户A', '客户B', '客户C', '客户D', '客户E'];
+        const COUNTRIES = ['美国', '英国', '加拿大', '澳大利亚', '德国'];
+        const CARD_BINS = ['489687', '553698', '428837', '532839', '411122'];
+        const BAN_TYPES = ['ad_account_disabled', 'bm_banned', 'bm_swept', 'bm_kicked', null]; // null means not banned
 
-    // 生成2000个模拟广告户数据
-    for (let i = 0; i < 2000; i++) {
-        const customer = customers[i % customers.length];
-        const day = (i % 30) + 1;
-        const date = `2025-06-${String(day).padStart(2, '0')}`;
-        const banType = banTypes[Math.floor(Math.random() * banTypes.length)];
+        // 生成500条模拟数据
+        for (let i = 1; i <= 500; i++) {
+            const client = CLIENTS[i % CLIENTS.length];
+            const deliveryDate = new Date(2025, 5, 1 + (i % 30)); // June 2025
+            const banType = BAN_TYPES[Math.floor(Math.random() * BAN_TYPES.length)];
+            const isBanned = banType !== null;
+            let status = 'unused';
+            if (Math.random() > 0.3) status = 'no_spend';
+            if (Math.random() > 0.6) status = 'with_spend';
 
-        mockAdAccounts.push({
-            id: `AD${10000 + i}`,
-            customer: customer,
-            issueDate: date,
-            isBanned: !!banType,
-            banType: banType,
-            lifecycleStatus: lifecycle[Math.floor(Math.random() * lifecycle.length)],
-            isOneShot: Math.random() > 0.5,
-            cardBIN: cardBins[Math.floor(Math.random() * cardBins.length)],
-            country: countries[Math.floor(Math.random() * countries.length)],
-        });
-    }
-
-
-    // --- DOM 元素引用 ---
-    const elements = {
-        filterModeRadios: document.querySelectorAll('input[name="filterMode"]'),
-        regularFiltersDiv: document.getElementById('regularFilters'),
-        adAccountFiltersDiv: document.getElementById('adAccountFilters'),
-        dateStart: document.getElementById('dateStart'),
-        dateEnd: document.getElementById('dateEnd'),
-        customersSelect: document.getElementById('customers'),
-        adAccountIdsTextarea: document.getElementById('adAccountIds'),
-        excludeBmBanCheckbox: document.getElementById('excludeBmBan'),
-        factorOneShot: document.getElementById('factorOneShot'),
-        factorCardBin: document.getElementById('factorCardBin'),
-        factorCountry: document.getElementById('factorCountry'),
-        applyButton: document.getElementById('applyFilters'),
-        resetButton: document.getElementById('resetFilters'),
-        table: document.getElementById('analysisTable'),
-        tableHead: document.querySelector('#analysisTable thead'),
-        tableBody: document.querySelector('#analysisTable tbody'),
-    };
-
-
-    // --- 核心功能函数 ---
-
-    /**
-     * 格式化百分比
-     * @param {number} part - 分子
-     * @param {number} total - 分母
-     * @returns {string} - 格式如 " (10.0%)"
-     */
-    function formatPercent(part, total) {
-        if (total === 0) return " (0.0%)";
-        return ` (${((part / total) * 100).toFixed(1)}%)`;
-    }
-
-    /**
-     * 生成对比箭头
-     * @param {number} currentPercent - 当前百分比
-     * @param {number} basePercent - 基准百分比
-     * @returns {string} - HTML 字符串
-     */
-    function generateArrow(currentPercent, basePercent) {
-        if (currentPercent > basePercent) {
-            return '<span class="arrow up">↑</span>';
-        }
-        if (currentPercent < basePercent) {
-            return '<span class="arrow down">↓</span>';
-        }
-        return '';
-    }
-
-    /**
-     * 聚合数据
-     * @param {Array} accounts - 广告户数据数组
-     * @param {boolean} excludeBmBans - 是否排除BM封禁
-     * @returns {object} - 聚合后的统计数据
-     */
-    function aggregateData(accounts, excludeBmBans) {
-        const totalCount = accounts.length;
-
-        const getBannedAccounts = (accs) => {
-            if (excludeBmBans) {
-                return accs.filter(a => a.isBanned && !bmBanTypes.includes(a.banType));
-            }
-            return accs.filter(a => a.isBanned);
-        };
-
-        const bannedAccounts = getBannedAccounts(accounts);
-        const totalBanned = bannedAccounts.length;
-        const unusedBanned = bannedAccounts.filter(a => a.lifecycleStatus === '未使用').length;
-        const noSpendBanned = bannedAccounts.filter(a => a.lifecycleStatus === '上广告未消耗').length;
-        const spentBanned = bannedAccounts.filter(a => a.lifecycleStatus === '上广告已消耗').length;
-
-        return {
-            totalCount,
-            totalBanned,
-            unusedBanned,
-            noSpendBanned,
-            spentBanned,
-            totalBannedPercent: totalCount > 0 ? (totalBanned / totalCount) * 100 : 0,
-            unusedBannedPercent: totalCount > 0 ? (unusedBanned / totalCount) * 100 : 0,
-            noSpendBannedPercent: totalCount > 0 ? (noSpendBanned / totalCount) * 100 : 0,
-            spentBannedPercent: totalCount > 0 ? (spentBanned / totalCount) * 100 : 0,
-        };
-    }
-
-
-    /**
-     * 渲染常规筛选表格
-     * @param {object} filters - 当前筛选条件
-     */
-    function renderRegularTable(filters) {
-        elements.tableHead.innerHTML = `
-        <tr>
-            <th>客户</th>
-            <th>总下户数</th>
-            <th>总封禁数 (占比)</th>
-            <th>未使用被封禁 (占比)</th>
-            <th>未消耗封禁 (占比)</th>
-            <th>已消耗封禁 (占比)</th>
-        </tr>
-    `;
-        elements.tableBody.innerHTML = '';
-
-        const selectedCustomers = Array.from(elements.customersSelect.selectedOptions).map(o => o.value);
-        const filteredAccounts = mockAdAccounts.filter(acc => {
-            const date = new Date(acc.issueDate);
-            const start = new Date(filters.dateStart);
-            const end = new Date(filters.dateEnd);
-            return date >= start && date <= end && selectedCustomers.includes(acc.customer);
-        });
-
-        const accountsByCustomer = filteredAccounts.reduce((acc, current) => {
-            if (!acc[current.customer]) {
-                acc[current.customer] = [];
-            }
-            acc[current.customer].push(current);
-            return acc;
-        }, {});
-
-        for (const customerName of selectedCustomers) {
-            const customerAccounts = accountsByCustomer[customerName] || [];
-            const customerStats = aggregateData(customerAccounts, filters.excludeBmBans);
-
-            const mainRow = document.createElement('tr');
-            mainRow.innerHTML = `
-            <td>${customerName}</td>
-            <td>${customerStats.totalCount}</td>
-            <td>${customerStats.totalBanned}${formatPercent(customerStats.totalBanned, customerStats.totalCount)}</td>
-            <td>${customerStats.unusedBanned}${formatPercent(customerStats.unusedBanned, customerStats.totalCount)}</td>
-            <td>${customerStats.noSpendBanned}${formatPercent(customerStats.noSpendBanned, customerStats.totalCount)}</td>
-            <td>${customerStats.spentBanned}${formatPercent(customerStats.spentBanned, customerStats.totalCount)}</td>
-        `;
-            elements.tableBody.appendChild(mainRow);
-
-            renderFactorRows(customerAccounts, customerStats, filters);
-        }
-    }
-
-    /**
-     * 渲染影响因素的子行
-     * @param {Array} baseAccounts - 进行细分的数据集 (如某个客户的所有账户, 或所有要观察的账户)
-     * @param {object} baseStats - 基准统计数据 (用于对比生成箭头)
-     * @param {object} filters - 当前筛选条件
-     */
-    function renderFactorRows(baseAccounts, baseStats, filters) {
-        const createSubRow = (label, factorStats, baseStats) => {
-            const row = document.createElement('tr');
-            row.className = 'sub-row';
-            row.innerHTML = `
-            <td>└ ${label}</td>
-            <td>${factorStats.totalCount}</td>
-            <td>${factorStats.totalBanned}${formatPercent(factorStats.totalBanned, factorStats.totalCount)} ${generateArrow(factorStats.totalBannedPercent, baseStats.totalBannedPercent)}</td>
-            <td>${factorStats.unusedBanned}${formatPercent(factorStats.unusedBanned, factorStats.totalCount)} ${generateArrow(factorStats.unusedBannedPercent, baseStats.unusedBannedPercent)}</td>
-            <td>${factorStats.noSpendBanned}${formatPercent(factorStats.noSpendBanned, factorStats.totalCount)} ${generateArrow(factorStats.noSpendBannedPercent, baseStats.noSpendBannedPercent)}</td>
-            <td>${factorStats.spentBanned}${formatPercent(factorStats.spentBanned, factorStats.totalCount)} ${generateArrow(factorStats.spentBannedPercent, baseStats.spentBannedPercent)}</td>
-        `;
-            return row;
-        };
-
-        if (filters.factorOneShot) {
-            const factorAccounts = baseAccounts.filter(a => a.isOneShot);
-            if (factorAccounts.length > 0) {
-                const factorStats = aggregateData(factorAccounts, filters.excludeBmBans);
-                elements.tableBody.appendChild(createSubRow('一刀流', factorStats, baseStats));
-            }
+            MOCK_DATA.push({
+                id: `AD${10000 + i}`,
+                client: client,
+                deliveryDate: deliveryDate.toISOString().split('T')[0],
+                status: isBanned ? (Math.random() > 0.5 ? status : ['unused', 'no_spend', 'with_spend'][Math.floor(Math.random()*3)]) : status,
+                isBanned: isBanned,
+                banType: banType,
+                isOneShot: Math.random() > 0.6,
+                cardBin: CARD_BINS[i % CARD_BINS.length],
+                country: COUNTRIES[i % COUNTRIES.length]
+            });
         }
 
-        if (filters.factorCardBin.length > 0) {
-            for (const bin of filters.factorCardBin) {
-                const factorAccounts = baseAccounts.filter(a => a.cardBIN === bin);
-                if (factorAccounts.length > 0) {
-                    const factorStats = aggregateData(factorAccounts, filters.excludeBmBans);
-                    elements.tableBody.appendChild(createSubRow(`卡头: ${bin}`, factorStats, baseStats));
+        // --- DOM 元素 ---
+        const modeRadios = document.querySelectorAll('input[name="filterMode"]');
+        const regularFiltersDiv = document.getElementById('regular-filters');
+        const adAccountFiltersDiv = document.getElementById('ad-account-filters');
+        const clientSelect = document.getElementById('client-select');
+        const cardBinSelect = document.getElementById('card-bin-select');
+        const countrySelect = document.getElementById('country-select');
+        const queryBtn = document.getElementById('query-btn');
+        const tableContainer = document.getElementById('table-container');
+        const referenceDataNote = document.getElementById('reference-data-note');
+        const banTypeSelect = document.getElementById('ban-type-select');
+        const adAccountInput = document.getElementById('ad-account-input');
+
+        // --- 初始化筛选器 ---
+        function populateSelect(selectElement, options) {
+            options.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option;
+                opt.textContent = option;
+                selectElement.appendChild(opt);
+            });
+        }
+
+        populateSelect(clientSelect, CLIENTS);
+        populateSelect(cardBinSelect, CARD_BINS);
+        populateSelect(countrySelect, COUNTRIES);
+
+        const today = new Date();
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(today.getDate() - 30);
+        document.getElementById('date-range-start').value = thirtyDaysAgo.toISOString().split('T')[0];
+        document.getElementById('date-range-end').value = today.toISOString().split('T')[0];
+
+        // **新增：为广告户输入框设置默认示例值**
+        adAccountInput.value = 'AD10005 AD10020 AD10035 AD10050';
+
+
+        // --- 事件监听 ---
+        modeRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                if (e.target.value === 'regular') {
+                    regularFiltersDiv.style.display = 'flex';
+                    adAccountFiltersDiv.style.display = 'none';
+                } else {
+                    regularFiltersDiv.style.display = 'none';
+                    adAccountFiltersDiv.style.display = 'flex';
                 }
+                // 清空结果
+                tableContainer.innerHTML = '';
+                referenceDataNote.style.display = 'none';
+            });
+        });
+
+        queryBtn.addEventListener('click', renderTable);
+
+        // --- 核心逻辑 ---
+
+        /**
+         * 获取当前选中的筛选条件
+         */
+        function getFilters() {
+            const selectedOptions = (select) => Array.from(select.selectedOptions).map(opt => opt.value);
+            return {
+                mode: document.querySelector('input[name="filterMode"]:checked').value,
+                startDate: document.getElementById('date-range-start').value,
+                endDate: document.getElementById('date-range-end').value,
+                clients: selectedOptions(clientSelect),
+                adAccountIds: adAccountInput.value.trim().split(/[\s\n]+/).filter(id => id),
+                banTypes: selectedOptions(banTypeSelect),
+                isOneShot: document.getElementById('is-oneshot-checkbox').checked,
+                cardBins: selectedOptions(cardBinSelect),
+                countries: selectedOptions(countrySelect),
+            };
+        }
+
+        /**
+         * 根据一组广告户数据计算统计信息
+         * @param {Array} data - 广告户对象数组
+         * @param {Array} banTypeFilter - 要统计的封禁类型
+         * @returns {Object} - 统计结果
+         */
+        function calculateStats(data, banTypeFilter) {
+            const totalAccounts = data.length;
+            if (totalAccounts === 0) {
+                return { totalAccounts: 0, totalBans: 0, unusedBans: 0, noSpendBans: 0, withSpendBans: 0 };
+            }
+
+            const bannedAccounts = data.filter(acc => acc.isBanned && (banTypeFilter.length === 0 || banTypeFilter.includes(acc.banType)));
+
+            const totalBans = bannedAccounts.length;
+            const unusedBans = bannedAccounts.filter(acc => acc.status === 'unused').length;
+            const noSpendBans = bannedAccounts.filter(acc => acc.status === 'no_spend').length;
+            const withSpendBans = bannedAccounts.filter(acc => acc.status === 'with_spend').length;
+
+            return { totalAccounts, totalBans, unusedBans, noSpendBans, withSpendBans };
+        }
+
+        /**
+         * 格式化数字和百分比
+         * @param {number} count - 数量
+         * @param {number} total - 总数
+         * @returns {string} - 格式化后的字符串 "数量 (百分比%)"
+         */
+        function formatCell(count, total) {
+            if (total === 0) return `${count} (0.0%)`;
+            const percentage = ((count / total) * 100).toFixed(1);
+            return `${count} (${percentage}%)`;
+        }
+
+        /**
+         * 生成对比箭头
+         * @param {number} currentRate - 当前比率
+         * @param {number} baseRate - 基准比率
+         * @returns {string} - HTML箭头元素
+         */
+        function getArrow(currentRate, baseRate) {
+            if (isNaN(currentRate) || isNaN(baseRate) || currentRate === baseRate) return '';
+            if (currentRate > baseRate) return '<span class="arrow up">↑</span>';
+            if (currentRate < baseRate) return '<span class="arrow down">↓</span>';
+            return '';
+        }
+
+        /**
+         * 主渲染函数
+         */
+        function renderTable() {
+            const filters = getFilters();
+            if (filters.mode === 'regular') {
+                renderRegularTable(filters);
+            } else {
+                renderAdAccountTable(filters);
             }
         }
 
-        if (filters.factorCountry.length > 0) {
-            for (const country of filters.factorCountry) {
-                const factorAccounts = baseAccounts.filter(a => a.country === country);
-                if (factorAccounts.length > 0) {
-                    const factorStats = aggregateData(factorAccounts, filters.excludeBmBans);
-                    elements.tableBody.appendChild(createSubRow(`投放国家: ${country}`, factorStats, baseStats));
+        /**
+         * 渲染常规筛选表格
+         */
+        function renderRegularTable(filters) {
+            referenceDataNote.style.display = 'none';
+
+            let filteredData = MOCK_DATA.filter(acc => {
+                const date = new Date(acc.deliveryDate);
+                const start = new Date(filters.startDate);
+                const end = new Date(filters.endDate);
+                end.setDate(end.getDate() + 1); // include end date
+
+                const dateMatch = date >= start && date < end;
+                const clientMatch = filters.clients.length === 0 || filters.clients.includes(acc.client);
+
+                return dateMatch && clientMatch;
+            });
+
+            const clientsToDisplay = filters.clients.length > 0 ? filters.clients : CLIENTS;
+            let tableHtml = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>客户</th>
+                        <th>总下户数</th>
+                        <th>总封禁数 (占比)</th>
+                        <th>未使用被封禁 (占比)</th>
+                        <th>未消耗封禁 (占比)</th>
+                        <th>已消耗封禁 (占比)</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+            clientsToDisplay.forEach(client => {
+                const clientData = filteredData.filter(acc => acc.client === client);
+                if (clientData.length === 0) return;
+
+                const baseStats = calculateStats(clientData, filters.banTypes);
+
+                tableHtml += `
+                <tr class="main-row">
+                    <td><strong>${client}</strong></td>
+                    <td>${baseStats.totalAccounts}</td>
+                    <td>${formatCell(baseStats.totalBans, baseStats.totalAccounts)}</td>
+                    <td>${formatCell(baseStats.unusedBans, baseStats.totalAccounts)}</td>
+                    <td>${formatCell(baseStats.noSpendBans, baseStats.totalAccounts)}</td>
+                    <td>${formatCell(baseStats.withSpendBans, baseStats.totalAccounts)}</td>
+                </tr>
+            `;
+
+                // 处理影响因素
+                const baseRates = {
+                    total: baseStats.totalBans / baseStats.totalAccounts,
+                    unused: baseStats.unusedBans / baseStats.totalAccounts,
+                    noSpend: baseStats.noSpendBans / baseStats.totalAccounts,
+                    withSpend: baseStats.withSpendBans / baseStats.totalAccounts,
+                };
+
+                const generateSubRow = (label, subData) => {
+                    if (subData.length === 0) return '';
+                    const subStats = calculateStats(subData, filters.banTypes);
+                    const subRates = {
+                        total: subStats.totalBans / subStats.totalAccounts,
+                        unused: subStats.unusedBans / subStats.totalAccounts,
+                        noSpend: subStats.noSpendBans / subStats.totalAccounts,
+                        withSpend: subStats.withSpendBans / subStats.totalAccounts,
+                    };
+                    return `
+                    <tr class="sub-row">
+                        <td>└ ${label}</td>
+                        <td>${subStats.totalAccounts}</td>
+                        <td>${formatCell(subStats.totalBans, subStats.totalAccounts)} ${getArrow(subRates.total, baseRates.total)}</td>
+                        <td>${formatCell(subStats.unusedBans, subStats.totalAccounts)} ${getArrow(subRates.unused, baseRates.unused)}</td>
+                        <td>${formatCell(subStats.noSpendBans, subStats.totalAccounts)} ${getArrow(subRates.noSpend, baseRates.noSpend)}</td>
+                        <td>${formatCell(subStats.withSpendBans, subStats.totalAccounts)} ${getArrow(subRates.withSpend, baseRates.withSpend)}</td>
+                    </tr>
+                `;
+                };
+
+                if (filters.isOneShot) {
+                    const oneShotData = clientData.filter(acc => acc.isOneShot);
+                    tableHtml += generateSubRow('一刀流', oneShotData);
                 }
+                if (filters.cardBins.length > 0) {
+                    filters.cardBins.forEach(bin => {
+                        const binData = clientData.filter(acc => acc.cardBin === bin);
+                        tableHtml += generateSubRow(`卡头: ${bin}`, binData);
+                    });
+                }
+                if (filters.countries.length > 0) {
+                    filters.countries.forEach(country => {
+                        const countryData = clientData.filter(acc => acc.country === country);
+                        tableHtml += generateSubRow(`投放国家: ${country}`, countryData);
+                    });
+                }
+            });
+
+            tableHtml += `</tbody></table>`;
+            tableContainer.innerHTML = tableHtml;
+        }
+
+        /**
+         * 渲染广告户筛选表格
+         */
+        function renderAdAccountTable(filters) {
+            if (filters.adAccountIds.length === 0) {
+                tableContainer.innerHTML = '<p class="note">请输入至少一个广告户ID进行分析。</p>';
+                referenceDataNote.style.display = 'none';
+                return;
             }
+
+            let observedAccounts = MOCK_DATA.filter(acc => filters.adAccountIds.includes(acc.id));
+
+            // 如果找不到任何输入的广告户，则提示
+            if (observedAccounts.length === 0) {
+                tableContainer.innerHTML = `<p class="note">在数据源中未找到您输入的广告户ID：${filters.adAccountIds.join(', ')}。</p>`;
+                referenceDataNote.style.display = 'none';
+                return;
+            }
+
+            // 计算参考数据的时间范围
+            observedAccounts.sort((a, b) => new Date(a.deliveryDate) - new Date(b.deliveryDate));
+            let refStartDate = new Date(observedAccounts[0].deliveryDate);
+            let refEndDate = new Date(observedAccounts[observedAccounts.length - 1].deliveryDate);
+
+            let diffTime = Math.abs(refEndDate - refStartDate);
+            let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays < 3) {
+                refEndDate.setDate(refStartDate.getDate() + 2);
+            }
+
+            const refStartDateStr = refStartDate.toISOString().split('T')[0];
+            const refEndDateStr = refEndDate.toISOString().split('T')[0];
+
+            referenceDataNote.innerHTML = `<strong>参考数据说明：</strong> 根据您所选广告户的最早和最晚下户时间，自动选择了 <strong>${refStartDateStr}</strong> 至 <strong>${refEndDateStr}</strong> 的时间段作为参考基准。`;
+            referenceDataNote.style.display = 'block';
+
+            // 筛选影响因素
+            const applyFactorFilters = (data) => {
+                return data.filter(acc => {
+                    const oneShotMatch = !filters.isOneShot || acc.isOneShot;
+                    const cardBinMatch = filters.cardBins.length === 0 || filters.cardBins.includes(acc.cardBin);
+                    const countryMatch = filters.countries.length === 0 || filters.countries.includes(acc.country);
+                    return oneShotMatch && cardBinMatch && countryMatch;
+                });
+            };
+
+            // 获取参考数据
+            let referenceData = MOCK_DATA.filter(acc => {
+                const date = new Date(acc.deliveryDate);
+                return date >= refStartDate && date <= refEndDate;
+            });
+
+            // 应用影响因素筛选
+            let finalObservedData = applyFactorFilters(observedAccounts);
+            let finalReferenceData = applyFactorFilters(referenceData);
+
+            const observedStats = calculateStats(finalObservedData, filters.banTypes);
+            const referenceStats = calculateStats(finalReferenceData, filters.banTypes);
+
+            const refRates = {
+                total: referenceStats.totalBans / referenceStats.totalAccounts,
+                unused: referenceStats.unusedBans / referenceStats.totalAccounts,
+                noSpend: referenceStats.noSpendBans / referenceStats.totalAccounts,
+                withSpend: referenceStats.withSpendBans / referenceStats.totalAccounts,
+            };
+
+            const obsRates = {
+                total: observedStats.totalBans / observedStats.totalAccounts,
+                unused: observedStats.unusedBans / observedStats.totalAccounts,
+                noSpend: observedStats.noSpendBans / observedStats.totalAccounts,
+                withSpend: observedStats.withSpendBans / observedStats.totalAccounts,
+            };
+
+            let tableHtml = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>数据类型</th>
+                        <th>总下户数</th>
+                        <th>总封禁数 (占比)</th>
+                        <th>未使用被封禁 (占比)</th>
+                        <th>未消耗封禁 (占比)</th>
+                        <th>已消耗封禁 (占比)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>参考数据</td>
+                        <td>${referenceStats.totalAccounts}</td>
+                        <td>${formatCell(referenceStats.totalBans, referenceStats.totalAccounts)}</td>
+                        <td>${formatCell(referenceStats.unusedBans, referenceStats.totalAccounts)}</td>
+                        <td>${formatCell(referenceStats.noSpendBans, referenceStats.totalAccounts)}</td>
+                        <td>${formatCell(referenceStats.withSpendBans, referenceStats.totalAccounts)}</td>
+                    </tr>
+                    <tr>
+                        <td>要观察的户</td>
+                        <td>${observedStats.totalAccounts}</td>
+                        <td>${formatCell(observedStats.totalBans, observedStats.totalAccounts)} ${getArrow(obsRates.total, refRates.total)}</td>
+                        <td>${formatCell(observedStats.unusedBans, observedStats.totalAccounts)} ${getArrow(obsRates.unused, refRates.unused)}</td>
+                        <td>${formatCell(observedStats.noSpendBans, observedStats.totalAccounts)} ${getArrow(obsRates.noSpend, refRates.noSpend)}</td>
+                        <td>${formatCell(observedStats.withSpendBans, observedStats.totalAccounts)} ${getArrow(obsRates.withSpend, refRates.withSpend)}</td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
+            tableContainer.innerHTML = tableHtml;
         }
-    }
 
-    /**
-     * 渲染广告户筛选表格
-     * @param {object} filters - 当前筛选条件
-     */
-    function renderAdAccountTable(filters) {
-        elements.tableHead.innerHTML = `
-        <tr>
-            <th>数据类型</th>
-            <th>总下户数</th>
-            <th>总封禁数 (占比)</th>
-            <th>未使用被封禁 (占比)</th>
-            <th>未消耗封禁 (占比)</th>
-            <th>已消耗封禁 (占比)</th>
-        </tr>
-    `;
-        elements.tableBody.innerHTML = '';
-
-        const adAccountIds = filters.adAccountIds.split(/\s+/).filter(id => id.trim() !== '');
-        if (adAccountIds.length === 0) {
-            elements.tableBody.innerHTML = '<tr><td colspan="6">请输入要观察的广告户ID。</td></tr>';
-            return;
-        }
-
-        const observedAccounts = mockAdAccounts.filter(a => adAccountIds.includes(a.id));
-        if (observedAccounts.length === 0) {
-            elements.tableBody.innerHTML = '<tr><td colspan="6">未在模拟数据中找到您输入的广告户ID。</td></tr>';
-            return;
-        }
-        const observedStats = aggregateData(observedAccounts, filters.excludeBmBans);
-
-        // 计算参考数据
-        const observedDates = observedAccounts.map(a => new Date(a.issueDate)).sort((a, b) => a - b);
-        let refStartDate = observedDates[0];
-        let refEndDate = observedDates[observedDates.length - 1];
-
-        const diffTime = Math.abs(refEndDate - refStartDate);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        if (diffDays < 3) {
-            refStartDate = new Date(refStartDate.getTime() - 3 * 24 * 60 * 60 * 1000);
-        }
-
-        const refStartDateStr = refStartDate.toISOString().split('T')[0];
-        const refEndDateStr = refEndDate.toISOString().split('T')[0];
-
-        const referenceAccounts = mockAdAccounts.filter(acc => {
-            const date = new Date(acc.issueDate);
-            return date >= refStartDate && date <= refEndDate;
-        });
-        const referenceStats = aggregateData(referenceAccounts, filters.excludeBmBans);
-
-        // 渲染表格行
-        const referenceRow = document.createElement('tr');
-        referenceRow.innerHTML = `
-        <td>
-            参考数据
-            <span class="reference-note">
-                *注释: 参考数据的时间段是根据您所选广告户的最早和最晚下户日期 (${refStartDateStr} 至 ${refEndDateStr}) 动态计算的。
-            </span>
-        </td>
-        <td>${referenceStats.totalCount}</td>
-        <td>${referenceStats.totalBanned}${formatPercent(referenceStats.totalBanned, referenceStats.totalCount)}</td>
-        <td>${referenceStats.unusedBanned}${formatPercent(referenceStats.unusedBanned, referenceStats.totalCount)}</td>
-        <td>${referenceStats.noSpendBanned}${formatPercent(referenceStats.noSpendBanned, referenceStats.totalCount)}</td>
-        <td>${referenceStats.spentBanned}${formatPercent(referenceStats.spentBanned, referenceStats.totalCount)}</td>
-    `;
-        elements.tableBody.appendChild(referenceRow);
-
-        const observedRow = document.createElement('tr');
-        observedRow.innerHTML = `
-        <td>要观察的户</td>
-        <td>${observedStats.totalCount}</td>
-        <td>${observedStats.totalBanned}${formatPercent(observedStats.totalBanned, observedStats.totalCount)} ${generateArrow(observedStats.totalBannedPercent, referenceStats.totalBannedPercent)}</td>
-        <td>${observedStats.unusedBanned}${formatPercent(observedStats.unusedBanned, observedStats.totalCount)} ${generateArrow(observedStats.unusedBannedPercent, referenceStats.unusedBannedPercent)}</td>
-        <td>${observedStats.noSpendBanned}${formatPercent(observedStats.noSpendBanned, observedStats.totalCount)} ${generateArrow(observedStats.noSpendBannedPercent, referenceStats.noSpendBannedPercent)}</td>
-        <td>${observedStats.spentBanned}${formatPercent(observedStats.spentBanned, observedStats.totalCount)} ${generateArrow(observedStats.spentBannedPercent, referenceStats.spentBannedPercent)}</td>
-    `;
-        elements.tableBody.appendChild(observedRow);
-
-        // 渲染影响因素子行 (基于要观察的户)
-        // 解释: 此处调用 renderFactorRows, 将 "要观察的户" 作为基础数据进行细分对比。
-        renderFactorRows(observedAccounts, observedStats, filters);
-    }
-
-    /**
-     * 主渲染函数
-     */
-    function render() {
-        const currentMode = document.querySelector('input[name="filterMode"]:checked').value;
-
-        const filters = {
-            mode: currentMode,
-            dateStart: elements.dateStart.value,
-            dateEnd: elements.dateEnd.value,
-            customers: Array.from(elements.customersSelect.selectedOptions).map(o => o.value),
-            adAccountIds: elements.adAccountIdsTextarea.value,
-            excludeBmBans: elements.excludeBmBanCheckbox.checked,
-            factorOneShot: elements.factorOneShot.checked,
-            factorCardBin: Array.from(elements.factorCardBin.selectedOptions).map(o => o.value),
-            factorCountry: Array.from(elements.factorCountry.selectedOptions).map(o => o.value),
-        };
-
-        if (currentMode === 'regular') {
-            renderRegularTable(filters);
-        } else {
-            renderAdAccountTable(filters);
-        }
-    }
-
-
-    // --- 事件监听器 ---
-
-    // 切换筛选模式
-    elements.filterModeRadios.forEach(radio => {
-        radio.addEventListener('change', () => {
-            const isRegular = radio.value === 'regular';
-            elements.regularFiltersDiv.style.display = isRegular ? 'block' : 'none';
-            elements.adAccountFiltersDiv.style.display = isRegular ? 'none' : 'block';
-            render(); // 切换后立即重新渲染
-        });
+        // 初始加载时执行一次查询
+        renderTable();
     });
-
-    // 应用筛选按钮
-    elements.applyButton.addEventListener('click', render);
-
-    // 重置按钮
-    elements.resetButton.addEventListener('click', () => {
-        // 重置为默认状态并重新渲染
-        document.querySelector('input[name="filterMode"][value="regular"]').checked = true;
-        elements.regularFiltersDiv.style.display = 'block';
-        elements.adAccountFiltersDiv.style.display = 'none';
-
-        elements.dateStart.value = "2025-06-01";
-        elements.dateEnd.value = "2025-06-30";
-        Array.from(elements.customersSelect.options).forEach(o => o.selected = true);
-        elements.adAccountIdsTextarea.value = 'AD10000 AD10001 AD10002 AD10003 AD10004 AD10005 AD10006 AD10007 AD10008 AD10009 AD10010 AD10011 AD10012 AD10013 AD10014 AD10015 AD10016 AD10017 AD10018 AD10019';
-        elements.excludeBmBanCheckbox.checked = false;
-        elements.factorOneShot.checked = false;
-        Array.from(elements.factorCardBin.options).forEach(o => o.selected = false);
-        Array.from(elements.factorCountry.options).forEach(o => o.selected = false);
-
-        render();
-    });
-
-
-    // --- 页面初始化 ---
-    document.addEventListener('DOMContentLoaded', () => {
-        // 页面加载后立即执行一次渲染，显示默认数据
-        render();
-    });
-
 </script>
 
 </body>
