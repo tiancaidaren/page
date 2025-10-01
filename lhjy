@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高级交易机器人控制面板 V4</title>
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --chart-bg: #16213e;
+            --text-color: #e0e0e0;
+            --primary-color: #0f3460;
+            --accent-color: #e94560; /* Attack */
+            --success-color: #2ecc71;
+            --defense-color: #3498db; /* Defense */
+            --border-color: rgba(255, 255, 255, 0.1);
+            --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container { width: 100%; max-width: 950px; }
+
+        .card {
+            background-color: var(--primary-color);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+        }
+
+        h1, h2 {
+            color: #f1f1f1;
+            margin-top: 0;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        h1 { text-align: center; border-bottom: 2px solid var(--accent-color); }
+        h2 { font-size: 1.5em; }
+
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #ccc; }
+        input[type="text"], input[type="password"], select {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--chart-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-color);
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            background-color: var(--accent-color);
+            color: white; border: none; padding: 12px 25px; font-size: 1.1em;
+            border-radius: 8px; cursor: pointer; transition: all 0.3s;
+            display: inline-block; text-align: center; margin-top: 10px;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .btn-add { background-color: var(--success-color); }
+        .btn-add:hover { background-color: #3bed82; }
+        .btn-test { background-color: var(--defense-color); }
+        .btn-test:hover { background-color: #4aa9e9; }
+
+        .strategy-item {
+            border: 1px solid var(--border-color);
+            background-color: var(--chart-bg);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        /* Condition Builder Styles */
+        .condition-builder {
+            background-color: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .condition-row {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr auto;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .condition-logic {
+            font-weight: bold;
+            color: var(--defense-color);
+            margin: 5px 0;
+            padding-left: 10px;
+        }
+        .btn-remove-condition {
+            background: #c0392b; color: white; border: none; border-radius: 50%;
+            width: 28px; height: 28px; font-size: 1.2em; cursor: pointer;
+            line-height: 28px; text-align: center;
+        }
+        .condition-actions button {
+            background: none; border: 1px dashed var(--border-color);
+            color: var(--text-color); padding: 5px 10px;
+            cursor: pointer; margin-right: 10px; border-radius: 5px;
+        }
+
+        .api-status {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px; background-color: var(--chart-bg);
+            border-radius: 8px; margin-top: 20px;
+        }
+        .status-dot { width: 15px; height: 15px; border-radius: 50%; }
+        .status-dot.disconnected { background-color: #e74c3c; }
+        .status-dot.connected { background-color: #2ecc71; }
+        
+        small { color: #aaa; font-style: italic; display: block; margin-top: 5px;}
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>高级交易机器人控制面板 V4</h1>
+
+        <!-- Step 1: API Configuration -->
+        <div class="card">
+            <h2>🔌 步骤一: 连接交易所</h2>
+            <div class="form-group">
+                <label for="api-key">API Key</label>
+                <input type="text" id="api-key" placeholder="请输入您的API Key">
+            </div>
+            <div class="form-group">
+                <label for="secret-key">Secret Key</label>
+                <input type="password" id="secret-key" placeholder="请输入您的Secret Key">
+            </div>
+            <button class="btn btn-test" onclick="testApiConnection()">测试连接</button>
+            <div class="api-status">
+                <div id="status-dot" class="status-dot disconnected"></div>
+                <span id="status-text">状态: 未连接</span>
+            </div>
+            <small>请确保已在交易所后台为该API Key开启合约交易权限和双向持仓模式。</small>
+        </div>
+
+        <!-- Step 2: Defense Strategies -->
+        <div class="card">
+            <h2 style="color: var(--defense-color);">🛡️ 步骤二: 创建防守策略 (如何离场)</h2>
+            <p>定义独立的离场/风控规则。它们可以被下面的进攻策略调用。</p>
+            
+            <div class="strategy-item">
+                <div class="form-group">
+                    <label>防守策略名称</label>
+                    <input type="text" value="3分钟多信号止损">
+                </div>
+                <div class="form-group">
+                    <label>触发条件组 (满足任一条件即可)</label>
+                    <div class="condition-builder" id="defense-conditions-1">
+                        <!-- Conditions will be added here by JS -->
+                    </div>
+                    <div class="condition-actions">
+                        <button onclick="addCondition('defense-conditions-1', '或者')">+ 或者</button>
+                    </div>
+                </div>
+            </div>
+            <button class="btn btn-add">✚ 添加新防守策略</button>
+        </div>
+
+        <!-- Step 3: Attack Strategies -->
+        <div class="card">
+            <h2 style="color: var(--accent-color);">📈 步骤三: 创建进攻策略 (如何入场)</h2>
+            <p>创建入场规则，并关联一个防守策略来管理风险。</p>
+
+            <div class="strategy-item">
+                <div class="form-group">
+                    <label>进攻策略名称</label>
+                    <input type="text" value="1小时BOLL+SAR+VOL共振做多">
+                </div>
+                <div class="form-group">
+                    <label>触发条件组 (必须满足所有条件)</label>
+                    <div class="condition-builder" id="attack-conditions-1">
+                         <!-- Conditions will be added here by JS -->
+                    </div>
+                    <div class="condition-actions">
+                        <button onclick="addCondition('attack-conditions-1', '并且')">+ 并且</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>仓位管理 (凯利公式)</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <input type="text" placeholder="策略胜率 (%) 例: 60">
+                        <input type="text" placeholder="策略盈亏比 例: 2.5">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>关联防守策略 (用于平仓)</label>
+                    <select>
+                        <option>3分钟多信号止损</option>
+                        <option>无 (手动平仓)</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn btn-add">✚ 添加新进攻策略</button>
+        </div>
+    </div>
+    
+    <!-- Hidden Template for Condition Row -->
+    <div id="condition-template" style="display: none;">
+        <div class="condition-row">
+            <select class="indicator-select">
+                <option>BOLL (布林带)</option>
+                <option>SAR (抛物线)</option>
+                <option>VOL (成交量)</option>
+                <option>K线</option>
+            </select>
+            <select class="rule-select">
+                <!-- Rules will be populated by JS -->
+            </select>
+            <button class="btn-remove-condition" onclick="this.parentElement.remove()">-</button>
+        </div>
+    </div>
+
+    <script>
+        const rules = {
+            'BOLL (布林带)': ['收盘价 < 下轨', '收盘价 > 上轨', '收盘价 > 中轨', '收盘价 < 中轨'],
+            'SAR (抛物线)': ['从上方翻转至下方 (买入信号)', '从下方翻转至上方 (卖出信号)'],
+            'VOL (成交量)': ['放量 (大于近期均量)', '缩量 (小于近期均量)'],
+            'K线': ['收盘价上涨', '收盘价下跌']
+        };
+
+        function populateRules(indicatorSelect, ruleSelect) {
+            const selectedIndicator = indicatorSelect.value;
+            ruleSelect.innerHTML = '';
+            rules[selectedIndicator].forEach(rule => {
+                const option = document.createElement('option');
+                option.value = rule;
+                option.textContent = rule;
+                ruleSelect.appendChild(option);
+            });
+        }
+
+        function addCondition(containerId, logic) {
+            const container = document.getElementById(containerId);
+            
+            if (container.children.length > 0) {
+                const logicEl = document.createElement('div');
+                logicEl.className = 'condition-logic';
+                logicEl.textContent = logic;
+                container.appendChild(logicEl);
+            }
+
+            const template = document.getElementById('condition-template');
+            const newRow = template.firstElementChild.cloneNode(true);
+            
+            const indicatorSelect = newRow.querySelector('.indicator-select');
+            const ruleSelect = newRow.querySelector('.rule-select');
+            
+            indicatorSelect.addEventListener('change', () => populateRules(indicatorSelect, ruleSelect));
+            
+            container.appendChild(newRow);
+            populateRules(indicatorSelect, ruleSelect); // Initial population
+        }
+        
+        function testApiConnection() {
+            const dot = document.getElementById('status-dot');
+            const text = document.getElementById('status-text');
+            text.textContent = '状态: 测试中...';
+            dot.className = 'status-dot';
+            
+            setTimeout(() => {
+                // Simulate a 50/50 chance of success
+                if (Math.random() > 0.5) {
+                    dot.className = 'status-dot connected';
+                    text.textContent = '状态: 连接成功';
+                } else {
+                    dot.className = 'status-dot disconnected';
+                    text.textContent = '状态: 连接失败 (请检查API Key)';
+                }
+            }, 1500);
+        }
+
+        // Initialize default conditions for demonstration
+        document.addEventListener('DOMContentLoaded', () => {
+            // Default Defense Strategy
+            addCondition('defense-conditions-1', '或者');
+            document.querySelector('#defense-conditions-1 .indicator-select').value = 'SAR (抛物线)';
+            populateRules(document.querySelector('#defense-conditions-1 .indicator-select'), document.querySelector('#defense-conditions-1 .rule-select'));
+            document.querySelector('#defense-conditions-1 .rule-select').value = '从下方翻转至上方 (卖出信号)';
+            
+            addCondition('defense-conditions-1', '或者');
+            const defenseRows = document.querySelectorAll('#defense-conditions-1 .condition-row');
+            const lastDefenseRow = defenseRows[defenseRows.length-1];
+            lastDefenseRow.querySelector('.indicator-select').value = 'BOLL (布林带)';
+            populateRules(lastDefenseRow.querySelector('.indicator-select'), lastDefenseRow.querySelector('.rule-select'));
+            lastDefenseRow.querySelector('.rule-select').value = '收盘价 < 中轨';
+
+
+            // Default Attack Strategy
+            addCondition('attack-conditions-1', '并且');
+            document.querySelector('#attack-conditions-1 .indicator-select').value = 'BOLL (布林带)';
+            populateRules(document.querySelector('#attack-conditions-1 .indicator-select'), document.querySelector('#attack-conditions-1 .rule-select'));
+            document.querySelector('#attack-conditions-1 .rule-select').value = '收盘价 < 下轨';
+
+            addCondition('attack-conditions-1', '并且');
+            let attackRows = document.querySelectorAll('#attack-conditions-1 .condition-row');
+            let lastAttackRow = attackRows[attackRows.length-1];
+            lastAttackRow.querySelector('.indicator-select').value = 'SAR (抛物线)';
+            populateRules(lastAttackRow.querySelector('.indicator-select'), lastAttackRow.querySelector('.rule-select'));
+            lastAttackRow.querySelector('.rule-select').value = '从上方翻转至下方 (买入信号)';
+
+            addCondition('attack-conditions-1', '并且');
+            attackRows = document.querySelectorAll('#attack-conditions-1 .condition-row');
+            lastAttackRow = attackRows[attackRows.length-1];
+            lastAttackRow.querySelector('.indicator-select').value = 'VOL (成交量)';
+            populateRules(lastAttackRow.querySelector('.indicator-select'), lastAttackRow.querySelector('.rule-select'));
+            lastAttackRow.querySelector('.rule-select').value = '放量 (大于近期均量)';
+        });
+    </script>
+
+</body>
+</html>
