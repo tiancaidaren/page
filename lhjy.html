@@ -238,6 +238,16 @@
             color: #721c24;
         }
 
+        .account-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
         /* 日志面板 */
         .log-panel {
             height: 100%;
@@ -538,6 +548,70 @@
             flex: 1;
         }
 
+        /* 账号管理相关样式 */
+        .account-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            position: relative;
+        }
+
+        .account-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .account-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .account-info {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .account-info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .account-info-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+
+        .account-info-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .account-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .account-status-active {
+            color: #27ae60;
+            font-weight: 600;
+        }
+
+        .account-status-inactive {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+
         /* 响应式设计 */
         @media (max-width: 1400px) {
             .stats-grid {
@@ -566,6 +640,10 @@
 
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
+            }
+
+            .account-info {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -608,6 +686,31 @@
             .filter-bar {
                 flex-direction: column;
             }
+
+            .account-info {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 复选框组样式 */
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .checkbox-label input {
+            width: auto;
+            height: auto;
+            margin: 0;
         }
     </style>
 </head>
@@ -621,6 +724,9 @@
         </div>
         <div class="nav-item" onclick="switchPage('executions')">
             <span>📈 执行记录</span>
+        </div>
+        <div class="nav-item" onclick="switchPage('accounts')">
+            <span>👤 账号管理</span>
         </div>
         <div class="nav-item" onclick="switchPage('settings')">
             <span>⚙️ 设置</span>
@@ -665,6 +771,7 @@
                 <thead>
                 <tr>
                     <th>策略名称</th>
+                    <th>关联账号</th>
                     <th>进攻策略状态</th>
                     <th>防守策略状态</th>
                     <th>创建时间</th>
@@ -674,22 +781,24 @@
                 <tbody id="strategyList">
                 <tr>
                     <td>BTC-SAR-突破策略</td>
+                    <td><span class="account-badge">主账号</span></td>
                     <td><span class="status-badge status-running">运行中</span></td>
                     <td><span class="status-badge status-stopped">已停止</span></td>
                     <td>2025-10-08 14:30</td>
                     <td>
-                        <button class="btn btn-small btn-success" onclick="simulateStrategyTrigger('BTC-SAR-突破策略', 'attack')">模拟触发</button>
+                        <button class="btn btn-small btn-success" onclick="simulateStrategyTrigger('BTC-SAR-突破策略', 'attack', '主账号')">模拟触发</button>
                         <button class="btn btn-small btn-secondary">编辑</button>
                         <button class="btn btn-small btn-danger">删除</button>
                     </td>
                 </tr>
                 <tr>
                     <td>ETH-周期极值策略</td>
+                    <td><span class="account-badge">备用账号</span></td>
                     <td><span class="status-badge status-running">运行中</span></td>
                     <td><span class="status-badge status-running">运行中</span></td>
                     <td>2025-10-07 09:15</td>
                     <td>
-                        <button class="btn btn-small btn-success" onclick="simulateStrategyTrigger('ETH-周期极值策略', 'defense')">模拟触发</button>
+                        <button class="btn btn-small btn-success" onclick="simulateStrategyTrigger('ETH-周期极值策略', 'defense', '备用账号')">模拟触发</button>
                         <button class="btn btn-small btn-secondary">编辑</button>
                         <button class="btn btn-small btn-danger">删除</button>
                     </td>
@@ -706,6 +815,14 @@
 
             <!-- 筛选栏 -->
             <div class="filter-bar">
+                <div class="filter-item">
+                    <label class="form-label">账号筛选</label>
+                    <select class="form-select">
+                        <option>全部账号</option>
+                        <option>主账号</option>
+                        <option>备用账号</option>
+                    </select>
+                </div>
                 <div class="filter-item">
                     <label class="form-label">策略筛选</label>
                     <select class="form-select">
@@ -731,14 +848,6 @@
                         <option>近30天</option>
                     </select>
                 </div>
-                <div class="filter-item">
-                    <label class="form-label">盈亏状态</label>
-                    <select class="form-select">
-                        <option>全部</option>
-                        <option>盈利</option>
-                        <option>亏损</option>
-                    </select>
-                </div>
             </div>
 
             <!-- 执行记录表格 -->
@@ -747,6 +856,7 @@
                     <thead>
                     <tr>
                         <th>时间</th>
+                        <th>账号</th>
                         <th>策略名称</th>
                         <th>策略类型</th>
                         <th>交易对</th>
@@ -761,6 +871,7 @@
                     <tbody id="executionTableBody">
                     <tr>
                         <td>10:24:12</td>
+                        <td><span class="account-badge">主账号</span></td>
                         <td>BTC-SAR-突破策略</td>
                         <td>进攻</td>
                         <td>BTC-USDT</td>
@@ -773,6 +884,7 @@
                     </tr>
                     <tr>
                         <td>10:18:35</td>
+                        <td><span class="account-badge">备用账号</span></td>
                         <td>ETH-周期极值策略</td>
                         <td>防守</td>
                         <td>ETH-USDT</td>
@@ -783,54 +895,6 @@
                         <td class="pnl-loss">-$12.50</td>
                         <td>止损退出</td>
                     </tr>
-                    <tr>
-                        <td>10:05:21</td>
-                        <td>BTC-SAR-突破策略</td>
-                        <td>进攻</td>
-                        <td>BTC-USDT</td>
-                        <td class="direction-long">开多</td>
-                        <td>0.08</td>
-                        <td>$28,200</td>
-                        <td>$28,700</td>
-                        <td class="pnl-profit">+$120.00</td>
-                        <td>止盈平仓</td>
-                    </tr>
-                    <tr>
-                        <td>09:52:08</td>
-                        <td>ETH-周期极值策略</td>
-                        <td>进攻</td>
-                        <td>ETH-USDT</td>
-                        <td class="direction-long">开多</td>
-                        <td>3.0</td>
-                        <td>$1,820</td>
-                        <td>$1,845</td>
-                        <td class="pnl-profit">+$75.00</td>
-                        <td>突破24H最高点</td>
-                    </tr>
-                    <tr>
-                        <td>09:45:33</td>
-                        <td>BTC-SAR-突破策略</td>
-                        <td>防守</td>
-                        <td>BTC-USDT</td>
-                        <td class="direction-short">开空</td>
-                        <td>0.03</td>
-                        <td>$28,100</td>
-                        <td>$28,380</td>
-                        <td class="pnl-loss">-$8.40</td>
-                        <td>止损退出</td>
-                    </tr>
-                    <tr>
-                        <td>09:30:15</td>
-                        <td>ETH-周期极值策略</td>
-                        <td>防守</td>
-                        <td>ETH-USDT</td>
-                        <td class="direction-short">开空</td>
-                        <td>2.0</td>
-                        <td>$1,835</td>
-                        <td>$1,822</td>
-                        <td class="pnl-profit">+$26.40</td>
-                        <td>止盈平仓</td>
-                    </tr>
                     </tbody>
                 </table>
             </div>
@@ -838,6 +902,130 @@
             <div id="noExecutions" class="empty-state" style="display: none;">
                 <div class="empty-state-icon">📊</div>
                 <div class="empty-state-text">暂无执行记录</div>
+            </div>
+        </div>
+
+        <!-- 账号管理页面 -->
+        <div id="accounts" class="page">
+            <div class="page-header">
+                <h1 class="page-title">账号管理</h1>
+            </div>
+
+            <button class="btn btn-primary" onclick="showAddAccountForm()" style="margin-bottom: 20px;">+ 添加新账号</button>
+
+            <div id="accountList">
+                <!-- 账号卡片 1 -->
+                <div class="account-card">
+                    <div class="account-header">
+                        <div class="account-name">主账号</div>
+                        <div class="account-actions">
+                            <button class="btn btn-small btn-secondary">编辑</button>
+                            <button class="btn btn-small btn-danger">删除</button>
+                        </div>
+                    </div>
+                    <div class="account-info">
+                        <div class="account-info-item">
+                            <div class="account-info-label">API Key</div>
+                            <div class="account-info-value">****-****-****-a1b2</div>
+                        </div>
+                        <div class="account-info-item">
+                            <div class="account-info-label">状态</div>
+                            <div class="account-info-value account-status-active">✓ 已连接</div>
+                        </div>
+                        <div class="account-info-item">
+                            <div class="account-info-label">创建时间</div>
+                            <div class="account-info-value">2025-10-01 10:30</div>
+                        </div>
+                    </div>
+                    <div class="account-info">
+                        <div class="account-info-item">
+                            <div class="account-info-label">关联策略数</div>
+                            <div class="account-info-value">2 个</div>
+                        </div>
+                        <div class="account-info-item">
+                            <div class="account-info-label">今日交易</div>
+                            <div class="account-info-value">8 笔</div>
+                        </div>
+                        <div class="account-info-item">
+                            <div class="account-info-label">今日盈亏</div>
+                            <div class="account-info-value pnl-profit">+$156.20</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 账号卡片 2 -->
+                <div class="account-card">
+                    <div class="account-header">
+                        <div class="account-name">备用账号</div>
+                        <div class="account-actions">
+                            <button class="btn btn-small btn-secondary">编辑</button>
+                            <button class="btn btn-small btn-danger">删除</button>
+                        </div>
+                    </div>
+                    <div class="account-info">
+                        <div class="account-info-item">
+                            <div class="account-info-label">API Key</div>
+                            <div class="account-info-value">****-****-****-c3d4</div>
+                        </div>
+                        <div class="account-info-item">
+                            <div class="account-info-label">状态</div>
+                            <div class="account-info-value account-status-active">✓ 已连接</div>
+                        </div>
+                        <div class="account-info-item">
+                            <div class="account-info-label">创建时间</div>
+                            <div class="account-info-value">2025-10-05 14:20</div>
+                        </div>
+                    </div>
+                    <div class="account-info">
+                        <div class="account-info-item">
+                            <div class="account-info-label">关联策略数</div>
+                            <div class="account-info-value">1 个</div>
+                        </div>
+                        <div class="account-info-item">
+                            <div class="account-info-label">今日交易</div>
+                            <div class="account-info-value">4 笔</div>
+                        </div>
+                        <div class="account-info-item">
+                            <div class="account-info-label">今日盈亏</div>
+                            <div class="account-info-value pnl-profit">+$89.60</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 添加账号表单（默认隐藏） -->
+            <div id="addAccountForm" style="display: none;">
+                <div class="strategy-section">
+                    <h2 class="section-title">添加新账号</h2>
+
+                    <div class="form-group">
+                        <label class="form-label">账号别名</label>
+                        <input type="text" class="form-input" id="newAccountName" placeholder="例如：主账号、备用账号">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">API Key</label>
+                        <input type="text" class="form-input" id="newAccountApiKey" placeholder="请输入 API Key">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Secret Key</label>
+                        <input type="password" class="form-input" id="newAccountSecretKey" placeholder="请输入 Secret Key">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Passphrase</label>
+                        <input type="password" class="form-input" id="newAccountPassphrase" placeholder="请输入 Passphrase">
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" onclick="testNewAccountConnection()">测试连接</button>
+                        <button class="btn btn-success" onclick="saveNewAccount()">保存账号</button>
+                        <button class="btn btn-secondary" onclick="hideAddAccountForm()">取消</button>
+                    </div>
+
+                    <div id="newAccountStatus" class="connection-status"></div>
+                </div>
             </div>
         </div>
 
@@ -850,6 +1038,20 @@
             <div class="form-group">
                 <label class="form-label">策略名称</label>
                 <input type="text" class="form-input" placeholder="请输入策略名称">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">关联账号</label>
+                <div id="strategyAccountList" class="checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="strategyAccount" value="主账号">
+                        <span>主账号</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="strategyAccount" value="备用账号">
+                        <span>备用账号</span>
+                    </label>
+                </div>
             </div>
 
             <!-- 进攻策略配置 -->
@@ -989,30 +1191,36 @@
         <!-- 设置页面 -->
         <div id="settings" class="page">
             <div class="page-header">
-                <h1 class="page-title">API 配置</h1>
+                <h1 class="page-title">系统设置</h1>
             </div>
 
-            <div class="api-config">
+            <div class="strategy-section">
+                <h2 class="section-title">通用设置</h2>
+
                 <div class="form-group">
-                    <label class="form-label">API Key</label>
-                    <input type="text" class="form-input" placeholder="请输入 API Key">
+                    <label class="form-label">默认账号</label>
+                    <select class="form-select">
+                        <option>主账号</option>
+                        <option>备用账号</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Secret Key</label>
-                    <input type="password" class="form-input" placeholder="请输入 Secret Key">
+                    <label class="form-label">风险控制</label>
+                    <div class="signal-row">
+                        <div class="signal-field">
+                            <span class="field-label">单日最大交易次数</span>
+                            <input type="number" class="form-input" placeholder="例如: 20" min="1">
+                        </div>
+                        <div class="signal-field">
+                            <span class="field-label">单日最大亏损 (USDT)</span>
+                            <input type="number" class="form-input" placeholder="例如: 500" min="0">
+                        </div>
+                    </div>
                 </div>
-
-                <div class="form-group">
-                    <label class="form-label">Passphrase</label>
-                    <input type="password" class="form-input" placeholder="请输入 Passphrase">
-                </div>
-
-                <div id="connectionStatus" class="connection-status"></div>
 
                 <div class="action-buttons">
-                    <button class="btn btn-primary" onclick="testConnection()">测试连接</button>
-                    <button class="btn btn-success" onclick="saveApiConfig()">保存配置</button>
+                    <button class="btn btn-success" onclick="saveSettings()">保存设置</button>
                 </div>
             </div>
         </div>
@@ -1025,12 +1233,12 @@
             <div class="log-container" id="logContainer">
                 <div class="log-entry success">
                     <div class="log-time">2025-10-09 10:23:45</div>
-                    <div class="log-strategy">BTC-SAR-突破策略 · 进攻</div>
+                    <div class="log-strategy">主账号 · BTC-SAR-突破策略 · 进攻</div>
                     <div class="log-message">✅ 信号触发: SAR上穿 + RSI > 70</div>
                 </div>
                 <div class="log-entry success">
                     <div class="log-time">2025-10-09 10:23:47</div>
-                    <div class="log-strategy">BTC-SAR-突破策略 · 进攻</div>
+                    <div class="log-strategy">主账号 · BTC-SAR-突破策略 · 进攻</div>
                     <div class="log-message">📊 下单成功</div>
                     <div class="log-details">
                             <span class="log-detail-item">
@@ -1049,7 +1257,7 @@
                 </div>
                 <div class="log-entry success">
                     <div class="log-time">2025-10-09 10:24:12</div>
-                    <div class="log-strategy">BTC-SAR-突破策略 · 进攻</div>
+                    <div class="log-strategy">主账号 · BTC-SAR-突破策略 · 进攻</div>
                     <div class="log-message">💰 订单成交</div>
                     <div class="log-details">
                             <span class="log-detail-item">
@@ -1062,22 +1270,18 @@
                             </span>
                     </div>
                 </div>
-                <div class="log-entry warning">
-                    <div class="log-time">2025-10-09 10:35:22</div>
-                    <div class="log-strategy">ETH-周期极值策略 · 防守</div>
-                    <div class="log-message">⚠️ 信号未满足: 周期内最低点条件不符</div>
-                </div>
-                <div class="log-entry success">
-                    <div class="log-time">2025-10-09 10:42:18</div>
-                    <div class="log-strategy">ETH-周期极值策略 · 进攻</div>
-                    <div class="log-message">✅ 信号触发: 突破24H最高点</div>
-                </div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
+    // 账号数据存储
+    let accounts = [
+        { name: '主账号', apiKey: '****-****-****-a1b2', status: 'active' },
+        { name: '备用账号', apiKey: '****-****-****-c3d4', status: 'active' }
+    ];
+
     // 信号量计数器
     let signalCounters = {
         attackSignals: 0,
@@ -1169,9 +1373,57 @@
             navItems[0].classList.add('active');
         } else if (pageId === 'executions') {
             navItems[1].classList.add('active');
-        } else if (pageId === 'settings') {
+        } else if (pageId === 'accounts') {
             navItems[2].classList.add('active');
+        } else if (pageId === 'settings') {
+            navItems[3].classList.add('active');
         }
+    }
+
+    // 显示添加账号表单
+    function showAddAccountForm() {
+        document.getElementById('addAccountForm').style.display = 'block';
+        document.getElementById('accountList').style.display = 'none';
+    }
+
+    // 隐藏添加账号表单
+    function hideAddAccountForm() {
+        document.getElementById('addAccountForm').style.display = 'none';
+        document.getElementById('accountList').style.display = 'block';
+        // 清空表单
+        document.getElementById('newAccountName').value = '';
+        document.getElementById('newAccountApiKey').value = '';
+        document.getElementById('newAccountSecretKey').value = '';
+        document.getElementById('newAccountPassphrase').value = '';
+        document.getElementById('newAccountStatus').style.display = 'none';
+    }
+
+    // 测试新账号连接
+    function testNewAccountConnection() {
+        const statusDiv = document.getElementById('newAccountStatus');
+        statusDiv.style.display = 'block';
+        statusDiv.className = 'connection-status';
+        statusDiv.textContent = '正在测试连接...';
+
+        setTimeout(() => {
+            statusDiv.className = 'connection-status success';
+            statusDiv.textContent = '✅ 连接成功! API 配置有效';
+        }, 1500);
+    }
+
+    // 保存新账号
+    function saveNewAccount() {
+        const name = document.getElementById('newAccountName').value;
+        const apiKey = document.getElementById('newAccountApiKey').value;
+
+        if (!name || !apiKey) {
+            alert('请填写账号别名和API Key');
+            return;
+        }
+
+        alert('账号已保存: ' + name);
+        hideAddAccountForm();
+        addLog('success', '系统', '账号管理', `✅ 新账号已添加: ${name}`);
     }
 
     // 添加信号量
@@ -1325,7 +1577,7 @@
     }
 
     // 模拟策略触发
-    function simulateStrategyTrigger(strategyName, type) {
+    function simulateStrategyTrigger(strategyName, type, accountName) {
         const typeText = type === 'attack' ? '进攻' : '防守';
         const coin = strategyName.includes('BTC') ? 'BTC' : 'ETH';
         const direction = Math.random() > 0.5 ? 'long' : 'short';
@@ -1341,10 +1593,10 @@
         const pnlSign = pnl > 0 ? '+' : '';
 
         // 添加实时日志
-        addLog('success', strategyName, typeText, `✅ 信号触发: 所有条件满足`);
+        addLog('success', accountName, strategyName, typeText, `✅ 信号触发: 所有条件满足`);
 
         setTimeout(() => {
-            addLog('success', strategyName, typeText, `📊 下单成功`, [
+            addLog('success', accountName, strategyName, typeText, `📊 下单成功`, [
                 { label: '交易对', value: `${coin}-USDT` },
                 { label: '方向', value: directionText, class: directionClass },
                 { label: '数量', value: `${amount} ${coin}` }
@@ -1352,18 +1604,18 @@
         }, 1000);
 
         setTimeout(() => {
-            addLog('success', strategyName, typeText, `💰 订单成交`, [
+            addLog('success', accountName, strategyName, typeText, `💰 订单成交`, [
                 { label: '成交价', value: `$${openPrice}` },
                 { label: '成交额', value: `$${(parseFloat(openPrice) * parseFloat(amount)).toFixed(2)}` }
             ]);
 
             // 添加执行记录
-            addExecutionRecord(strategyName, typeText, coin, directionText, directionClass, amount, openPrice, closePrice, pnl, pnlClass, pnlSign);
+            addExecutionRecord(accountName, strategyName, typeText, coin, directionText, directionClass, amount, openPrice, closePrice, pnl, pnlClass, pnlSign);
         }, 2000);
     }
 
     // 添加日志
-    function addLog(type, strategy, subType, message, details = []) {
+    function addLog(type, account, strategy, subType, message, details = []) {
         const logContainer = document.getElementById('logContainer');
         const logEntry = document.createElement('div');
         logEntry.className = `log-entry ${type}`;
@@ -1387,7 +1639,7 @@
 
         logEntry.innerHTML = `
                 <div class="log-time">${timeStr}</div>
-                <div class="log-strategy">${strategy} · ${subType}</div>
+                <div class="log-strategy">${account} · ${strategy}${subType ? ' · ' + subType : ''}</div>
                 <div class="log-message">${message}</div>
                 ${detailsHtml}
             `;
@@ -1396,7 +1648,7 @@
     }
 
     // 添加执行记录
-    function addExecutionRecord(strategy, type, coin, direction, directionClass, amount, openPrice, closePrice, pnl, pnlClass, pnlSign) {
+    function addExecutionRecord(account, strategy, type, coin, direction, directionClass, amount, openPrice, closePrice, pnl, pnlClass, pnlSign) {
         const tbody = document.getElementById('executionTableBody');
         const row = document.createElement('tr');
 
@@ -1416,6 +1668,7 @@
 
         row.innerHTML = `
                 <td>${timeStr}</td>
+                <td><span class="account-badge">${account}</span></td>
                 <td>${strategy}</td>
                 <td>${type}</td>
                 <td>${coin}-USDT</td>
@@ -1449,40 +1702,25 @@
         const rows = document.querySelectorAll('#executionTableBody tr');
         let wins = 0;
         rows.forEach(row => {
-            const pnlText = row.cells[8].textContent;
+            const pnlText = row.cells[9].textContent;
             if (pnlText.startsWith('+')) wins++;
         });
         const winRate = ((wins / rows.length) * 100).toFixed(1);
         document.getElementById('winRate').textContent = winRate + '%';
     }
 
-    // 测试API连接
-    function testConnection() {
-        const statusDiv = document.getElementById('connectionStatus');
-        statusDiv.style.display = 'block';
-        statusDiv.className = 'connection-status';
-        statusDiv.textContent = '正在测试连接...';
-
-        setTimeout(() => {
-            statusDiv.className = 'connection-status success';
-            statusDiv.textContent = '✅ 连接成功! API 配置有效';
-        }, 1500);
-    }
-
-    // 保存API配置
-    function saveApiConfig() {
-        alert('API 配置已保存并加密存储');
-        const statusDiv = document.getElementById('connectionStatus');
-        statusDiv.style.display = 'block';
-        statusDiv.className = 'connection-status success';
-        statusDiv.textContent = '✅ 配置已保存';
-    }
-
     // 保存策略
     function saveStrategy() {
-        alert('策略配置已保存');
+        const account = document.getElementById('strategyAccount').value;
+        alert('策略配置已保存，关联账号: ' + account);
         switchPage('dashboard');
-        addLog('success', '系统', '配置', '📝 新策略已创建并保存');
+        addLog('success', '系统', '配置', '', '📝 新策略已创建并保存');
+    }
+
+    // 保存设置
+    function saveSettings() {
+        alert('系统设置已保存');
+        addLog('success', '系统', '设置', '', '✅ 系统设置已更新');
     }
 
     // 页面加载时初始化
@@ -1493,3 +1731,4 @@
 </script>
 </body>
 </html>
+
