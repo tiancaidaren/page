@@ -96,7 +96,7 @@
         /* 统计卡片 */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 20px;
             margin-bottom: 30px;
         }
@@ -115,14 +115,6 @@
         }
 
         .stat-card:nth-child(2) {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        }
-
-        .stat-card:nth-child(3) {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        }
-
-        .stat-card:nth-child(4) {
             background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
         }
 
@@ -246,6 +238,8 @@
             font-weight: 600;
             background: #e3f2fd;
             color: #1976d2;
+            margin-right: 5px;
+            margin-bottom: 5px;
         }
 
         /* 日志面板 */
@@ -612,6 +606,51 @@
             font-weight: 600;
         }
 
+        /* 多选账号样式 */
+        .account-selector {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            background: white;
+        }
+
+        .account-checkbox {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .account-checkbox:hover {
+            background: #f8f9fa;
+        }
+
+        .account-checkbox input[type="checkbox"] {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .account-checkbox label {
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .selected-accounts {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            min-height: 40px;
+        }
+
+        .selected-accounts-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+
         /* 响应式设计 */
         @media (max-width: 1400px) {
             .stats-grid {
@@ -691,27 +730,6 @@
                 grid-template-columns: 1fr;
             }
         }
-
-        /* 复选框组样式 */
-        .checkbox-group {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .checkbox-label {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .checkbox-label input {
-            width: auto;
-            height: auto;
-            margin: 0;
-        }
     </style>
 </head>
 <body>
@@ -749,16 +767,6 @@
                     <div class="stat-change">较昨日 +3</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">今日盈亏</div>
-                    <div class="stat-value" id="totalPnl">+$245.80</div>
-                    <div class="stat-change">收益率 +2.46%</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">胜率</div>
-                    <div class="stat-value" id="winRate">66.7%</div>
-                    <div class="stat-change">8胜 4负</div>
-                </div>
-                <div class="stat-card">
                     <div class="stat-label">持仓中</div>
                     <div class="stat-value" id="openPositions">3</div>
                     <div class="stat-change">浮动盈亏 +$45.20</div>
@@ -781,24 +789,29 @@
                 <tbody id="strategyList">
                 <tr>
                     <td>BTC-SAR-突破策略</td>
-                    <td><span class="account-badge">主账号</span></td>
+                    <td>
+                        <span class="account-badge">主账号</span>
+                        <span class="account-badge">备用账号</span>
+                    </td>
                     <td><span class="status-badge status-running">运行中</span></td>
                     <td><span class="status-badge status-stopped">已停止</span></td>
                     <td>2025-10-08 14:30</td>
                     <td>
-                        <button class="btn btn-small btn-success" onclick="simulateStrategyTrigger('BTC-SAR-突破策略', 'attack', '主账号')">模拟触发</button>
+                        <button class="btn btn-small btn-success" onclick="simulateStrategyTrigger('BTC-SAR-突破策略', 'attack', ['主账号', '备用账号'])">模拟触发</button>
                         <button class="btn btn-small btn-secondary">编辑</button>
                         <button class="btn btn-small btn-danger">删除</button>
                     </td>
                 </tr>
                 <tr>
                     <td>ETH-周期极值策略</td>
-                    <td><span class="account-badge">备用账号</span></td>
+                    <td>
+                        <span class="account-badge">主账号</span>
+                    </td>
                     <td><span class="status-badge status-running">运行中</span></td>
                     <td><span class="status-badge status-running">运行中</span></td>
                     <td>2025-10-07 09:15</td>
                     <td>
-                        <button class="btn btn-small btn-success" onclick="simulateStrategyTrigger('ETH-周期极值策略', 'defense', '备用账号')">模拟触发</button>
+                        <button class="btn btn-small btn-success" onclick="simulateStrategyTrigger('ETH-周期极值策略', 'defense', ['主账号'])">模拟触发</button>
                         <button class="btn btn-small btn-secondary">编辑</button>
                         <button class="btn btn-small btn-danger">删除</button>
                     </td>
@@ -1037,20 +1050,24 @@
 
             <div class="form-group">
                 <label class="form-label">策略名称</label>
-                <input type="text" class="form-input" placeholder="请输入策略名称">
+                <input type="text" class="form-input" id="strategyName" placeholder="请输入策略名称">
             </div>
 
             <div class="form-group">
-                <label class="form-label">关联账号</label>
-                <div id="strategyAccountList" class="checkbox-group">
-                    <label class="checkbox-label">
-                        <input type="checkbox" name="strategyAccount" value="主账号">
-                        <span>主账号</span>
-                    </label>
-                    <label class="checkbox-label">
-                        <input type="checkbox" name="strategyAccount" value="备用账号">
-                        <span>备用账号</span>
-                    </label>
+                <label class="form-label">关联账号（可多选）</label>
+                <div class="account-selector" id="accountSelector">
+                    <div class="account-checkbox">
+                        <input type="checkbox" id="account1" value="主账号">
+                        <label for="account1">主账号</label>
+                    </div>
+                    <div class="account-checkbox">
+                        <input type="checkbox" id="account2" value="备用账号">
+                        <label for="account2">备用账号</label>
+                    </div>
+                </div>
+                <div class="selected-accounts">
+                    <div class="selected-accounts-label">已选择账号：</div>
+                    <div id="selectedAccountsDisplay">未选择任何账号</div>
                 </div>
             </div>
 
@@ -1423,7 +1440,36 @@
 
         alert('账号已保存: ' + name);
         hideAddAccountForm();
-        addLog('success', '系统', '账号管理', `✅ 新账号已添加: ${name}`);
+        addLog('success', '系统', '账号管理', '', `✅ 新账号已添加: ${name}`);
+    }
+
+    // 监听账号选择变化
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkboxes = document.querySelectorAll('#accountSelector input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateSelectedAccounts);
+        });
+    });
+
+    // 更新选择的账号显示
+    function updateSelectedAccounts() {
+        const checkboxes = document.querySelectorAll('#accountSelector input[type="checkbox"]');
+        const selected = [];
+
+        checkboxes.forEach(checkbox => {
+            if (checkbox.checked) {
+                selected.push(checkbox.value);
+            }
+        });
+
+        const display = document.getElementById('selectedAccountsDisplay');
+        if (selected.length === 0) {
+            display.textContent = '未选择任何账号';
+            display.style.color = '#7f8c8d';
+        } else {
+            display.innerHTML = selected.map(acc => `<span class="account-badge">${acc}</span>`).join(' ');
+            display.style.color = '#2c3e50';
+        }
     }
 
     // 添加信号量
@@ -1577,7 +1623,10 @@
     }
 
     // 模拟策略触发
-    function simulateStrategyTrigger(strategyName, type, accountName) {
+    function simulateStrategyTrigger(strategyName, type, accountNames) {
+        // 随机选择一个账号执行
+        const accountName = accountNames[Math.floor(Math.random() * accountNames.length)];
+
         const typeText = type === 'attack' ? '进攻' : '防守';
         const coin = strategyName.includes('BTC') ? 'BTC' : 'ETH';
         const direction = Math.random() > 0.5 ? 'long' : 'short';
@@ -1683,39 +1732,23 @@
         tbody.insertBefore(row, tbody.firstChild);
 
         // 更新统计数据
-        updateStats(parseFloat(pnl));
+        updateStats();
     }
 
     // 更新统计数据
-    function updateStats(pnl) {
+    function updateStats() {
         // 更新交易次数
         const countEl = document.getElementById('totalTrades');
         countEl.textContent = parseInt(countEl.textContent) + 1;
-
-        // 更新盈亏
-        const pnlEl = document.getElementById('totalPnl');
-        const currentPnl = parseFloat(pnlEl.textContent.replace(/[+$,]/g, ''));
-        const newPnl = currentPnl + pnl;
-        pnlEl.textContent = (newPnl >= 0 ? '+' : '') + '$' + newPnl.toFixed(2);
-
-        // 更新胜率
-        const rows = document.querySelectorAll('#executionTableBody tr');
-        let wins = 0;
-        rows.forEach(row => {
-            const pnlText = row.cells[9].textContent;
-            if (pnlText.startsWith('+')) wins++;
-        });
-        const winRate = ((wins / rows.length) * 100).toFixed(1);
-        document.getElementById('winRate').textContent = winRate + '%';
     }
 
     // 保存策略
     function saveStrategy() {
-        const checkboxes = document.querySelectorAll('input[name="strategyAccount"]:checked');
+        const checkboxes = document.querySelectorAll('#accountSelector input[type="checkbox"]:checked');
         const selectedAccounts = Array.from(checkboxes).map(cb => cb.value);
 
         if (selectedAccounts.length === 0) {
-            alert('请至少选择一个关联账号');
+            alert('请至少选择一个账号');
             return;
         }
 
@@ -1734,8 +1767,8 @@
     window.addEventListener('DOMContentLoaded', function() {
         addSignal('attackSignals');
         addSignal('defenseSignals');
+        updateSelectedAccounts();
     });
 </script>
 </body>
 </html>
-
