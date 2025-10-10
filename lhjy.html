@@ -1711,8 +1711,15 @@
 
     // 保存策略
     function saveStrategy() {
-        const account = document.getElementById('strategyAccount').value;
-        alert('策略配置已保存，关联账号: ' + account);
+        const checkboxes = document.querySelectorAll('input[name="strategyAccount"]:checked');
+        const selectedAccounts = Array.from(checkboxes).map(cb => cb.value);
+
+        if (selectedAccounts.length === 0) {
+            alert('请至少选择一个关联账号');
+            return;
+        }
+
+        alert('策略配置已保存，关联账号: ' + selectedAccounts.join(', '));
         switchPage('dashboard');
         addLog('success', '系统', '配置', '', '📝 新策略已创建并保存');
     }
