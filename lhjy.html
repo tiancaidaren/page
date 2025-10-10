@@ -651,6 +651,133 @@
             margin-bottom: 5px;
         }
 
+        /* 模态框样式 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #7f8c8d;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .modal-close:hover {
+            background: #ecf0f1;
+        }
+
+        .strategy-checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .strategy-checkbox-item:hover {
+            background: #f8f9fa;
+            border-color: #3498db;
+        }
+
+        .strategy-checkbox-item input[type="checkbox"] {
+            margin-right: 12px;
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+
+        .strategy-info {
+            flex: 1;
+        }
+
+        .strategy-name {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+
+        .strategy-meta {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .account-strategies-list {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .account-strategies-title {
+            font-size: 13px;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+        }
+
+        .strategy-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #fff3cd;
+            color: #856404;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+
         /* 响应式设计 */
         @media (max-width: 1400px) {
             .stats-grid {
@@ -728,6 +855,11 @@
 
             .account-info {
                 grid-template-columns: 1fr;
+            }
+
+            .modal {
+                width: 95%;
+                padding: 20px;
             }
         }
     </style>
@@ -932,6 +1064,7 @@
                     <div class="account-header">
                         <div class="account-name">主账号</div>
                         <div class="account-actions">
+                            <button class="btn btn-small btn-primary" onclick="showAssignStrategyModal('主账号', ['BTC-SAR-突破策略', 'ETH-周期极值策略'])">分配策略</button>
                             <button class="btn btn-small btn-secondary">编辑</button>
                             <button class="btn btn-small btn-danger">删除</button>
                         </div>
@@ -964,6 +1097,11 @@
                             <div class="account-info-value pnl-profit">+$156.20</div>
                         </div>
                     </div>
+                    <div class="account-strategies-list">
+                        <div class="account-strategies-title">已关联的策略：</div>
+                        <span class="strategy-badge">BTC-SAR-突破策略</span>
+                        <span class="strategy-badge">ETH-周期极值策略</span>
+                    </div>
                 </div>
 
                 <!-- 账号卡片 2 -->
@@ -971,6 +1109,7 @@
                     <div class="account-header">
                         <div class="account-name">备用账号</div>
                         <div class="account-actions">
+                            <button class="btn btn-small btn-primary" onclick="showAssignStrategyModal('备用账号', ['BTC-SAR-突破策略'])">分配策略</button>
                             <button class="btn btn-small btn-secondary">编辑</button>
                             <button class="btn btn-small btn-danger">删除</button>
                         </div>
@@ -1002,6 +1141,10 @@
                             <div class="account-info-label">今日盈亏</div>
                             <div class="account-info-value pnl-profit">+$89.60</div>
                         </div>
+                    </div>
+                    <div class="account-strategies-list">
+                        <div class="account-strategies-title">已关联的策略：</div>
+                        <span class="strategy-badge">BTC-SAR-突破策略</span>
                     </div>
                 </div>
             </div>
@@ -1292,7 +1435,34 @@
     </div>
 </div>
 
+<!-- 分配策略模态框 -->
+<div id="assignStrategyModal" class="modal-overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">为 <span id="modalAccountName"></span> 分配策略</h2>
+            <button class="modal-close" onclick="closeAssignStrategyModal()">×</button>
+        </div>
+
+        <div id="strategyCheckboxList">
+            <!-- 策略列表将通过 JS 动态生成 -->
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn btn-primary" onclick="saveStrategyAssignment()">保存分配</button>
+            <button class="btn btn-secondary" onclick="closeAssignStrategyModal()">取消</button>
+        </div>
+    </div>
+</div>
+
 <script>
+    // 全局变量
+    let currentAccount = '';
+    let allStrategies = [
+        { name: 'BTC-SAR-突破策略', status: 'running', createTime: '2025-10-08 14:30' },
+        { name: 'ETH-周期极值策略', status: 'running', createTime: '2025-10-07 09:15' },
+        { name: 'SOL-MACD策略', status: 'stopped', createTime: '2025-10-06 16:20' }
+    ];
+
     // 账号数据存储
     let accounts = [
         { name: '主账号', apiKey: '****-****-****-a1b2', status: 'active' },
@@ -1372,6 +1542,75 @@
             ]
         }
     };
+
+    // 显示分配策略模态框
+    function showAssignStrategyModal(accountName, assignedStrategies) {
+        currentAccount = accountName;
+        document.getElementById('modalAccountName').textContent = accountName;
+
+        const listContainer = document.getElementById('strategyCheckboxList');
+        listContainer.innerHTML = '';
+
+        allStrategies.forEach(strategy => {
+            const isAssigned = assignedStrategies.includes(strategy.name);
+            const item = document.createElement('div');
+            item.className = 'strategy-checkbox-item';
+            item.innerHTML = `
+                    <input type="checkbox" id="strategy-${strategy.name}" value="${strategy.name}" ${isAssigned ? 'checked' : ''}>
+                    <div class="strategy-info">
+                        <div class="strategy-name">${strategy.name}</div>
+                        <div class="strategy-meta">
+                            <span class="status-badge ${strategy.status === 'running' ? 'status-running' : 'status-stopped'}">
+                                ${strategy.status === 'running' ? '运行中' : '已停止'}
+                            </span>
+                            <span style="margin-left: 10px; color: #7f8c8d;">创建于 ${strategy.createTime}</span>
+                        </div>
+                    </div>
+                `;
+
+            // 点击整个项目也可以切换复选框
+            item.addEventListener('click', function(e) {
+                if (e.target.type !== 'checkbox') {
+                    const checkbox = this.querySelector('input[type="checkbox"]');
+                    checkbox.checked = !checkbox.checked;
+                }
+            });
+
+            listContainer.appendChild(item);
+        });
+
+        document.getElementById('assignStrategyModal').classList.add('active');
+    }
+
+    // 关闭分配策略模态框
+    function closeAssignStrategyModal() {
+        document.getElementById('assignStrategyModal').classList.remove('active');
+    }
+
+    // 保存策略分配
+    function saveStrategyAssignment() {
+        const checkboxes = document.querySelectorAll('#strategyCheckboxList input[type="checkbox"]:checked');
+        const selectedStrategies = Array.from(checkboxes).map(cb => cb.value);
+
+        if (selectedStrategies.length === 0) {
+            alert('请至少选择一个策略');
+            return;
+        }
+
+        alert(`已为账号 "${currentAccount}" 分配 ${selectedStrategies.length} 个策略：\n${selectedStrategies.join('\n')}`);
+        addLog('success', '系统', '账号管理', '', `✅ 已为 ${currentAccount} 分配策略`);
+        closeAssignStrategyModal();
+
+        // 这里可以更新账号卡片的关联策略显示
+        // 实际应用中应该更新数据并重新渲染
+    }
+
+    // 点击模态框背景关闭
+    document.getElementById('assignStrategyModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeAssignStrategyModal();
+        }
+    });
 
     // 页面切换
     function switchPage(pageId) {
