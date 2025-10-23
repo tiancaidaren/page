@@ -269,6 +269,72 @@
         }, {});
     };
 
+    const oppositeDirection = (direction) => direction === 'long' ? 'short' : 'long';
+
+    const sarConditionText = (direction) => direction === 'long' ? 'K线上穿 SAR' : 'K线下穿 SAR';
+
+    const createStrategyRuntimeState = (strategy) => {
+        const attackDirection = strategy?.directions?.attack ?? 'long';
+        const defenseDirection = strategy?.directions?.defense ?? oppositeDirection(attackDirection);
+        return {
+            attackPosition: null,
+            defensePosition: null,
+            nextAttackDirection: attackDirection,
+            nextDefenseDirection: defenseDirection,
+            waitingDefenseSignal: false,
+            defenseSarEnabled: Boolean(defenseDirection)
+        };
+    };
+
+    const createPositionSnapshot = (strategy, direction) => {
+        const asset = strategy.asset ?? 'BTC';
+        const symbol = `${asset}-USDT`;
+        const amount = asset === 'BTC'
+            ? parseFloat((Math.random() * 0.05 + 0.01).toFixed(3))
+            : parseFloat((Math.random() * 3 + 1).toFixed(2));
+        const basePrice = asset === 'BTC'
+            ? 28000 + Math.random() * 1000
+            : asset === 'ETH'
+                ? 1800 + Math.random() * 100
+                : 100 + Math.random() * 20;
+        const openPrice = parseFloat(basePrice.toFixed(2));
+        return {
+            direction,
+            symbol,
+            amount,
+            amountDisplay: `${amount} ${asset}`,
+            openPrice,
+            openNotional: parseFloat((openPrice * amount).toFixed(2)),
+            openedAt: nowString()
+        };
+    };
+
+    const closePositionSnapshot = (position) => {
+        const drift = Math.random() * 200 - 80;
+        let closePrice = parseFloat((position.openPrice + drift).toFixed(2));
+        if (closePrice <= 0) {
+            closePrice = Math.max(1, parseFloat((position.openPrice + Math.abs(drift)).toFixed(2)));
+        }
+        const pnlRaw = (closePrice - position.openPrice) * position.amount * (position.direction === 'long' ? 1 : -1);
+        return {
+            closePrice: parseFloat(closePrice.toFixed(2)),
+            pnl: parseFloat(pnlRaw.toFixed(2))
+        };
+    };
+
+    const randomRemark = (context) => {
+        const pool = context === 'defense'
+            ? ['对冲介入', '风险缓释', '反向保护', '动态调仓']
+            : ['趋势入场', 'SAR 反转', '突破跟进', '顺势加仓'];
+        return pool[Math.floor(Math.random() * pool.length)];
+    };
+
+    const invertSarCondition = (condition) => {
+        if (condition === 'K线上穿') return 'K线下穿';
+        if (condition === 'K线下穿') return 'K线上穿';
+        return condition;
+    };
+
     const StrategySectionTitle = ({ icon, text }) => (
         <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2 pb-3 border-b border-slate-200">
             <span className="text-xl">{icon}</span>
@@ -702,6 +768,105 @@
         );
     };
 
+    const StrategyLinkageSummary = ({ attackSignals, defenseSignals, attackDirection, defenseDirection }) => {
+        const attackSarSignals = attackSignals.filter(signal => signal.indicator === 'sar');
+        if (attackSarSignals.length === 0) {
+            return (
+                <div className="bg-white border border-slate-200 rounded-xl shadow p-6 space-y-5">
+                    <StrategySectionTitle icon="🔗" text="策略联动说明" />
+                    <div className="text-sm text-slate-600 leading-relaxed">
+                        当前进攻策略未配置抛物线转向指标（SAR），暂无法生成进攻与防守的联动描述。
+                    </div>
+                </div>
+            );
+        }
+
+        const defenseSarSignals = defenseSignals.filter(signal => signal.indicator === 'sar');
+        const hasDefenseSar = defenseSarSignals.length > 0;
+
+        const getConditionText = (signals) => signals[0]?.params?.condition ?? 'K线上穿';
+        const attackConditionText = getConditionText(attackSarSignals);
+        const defenseConditionText = getConditionText(defenseSarSignals);
+        const attackDirectionText = attackDirection === 'long' ? '做多' : '做空';
+        const defenseDirectionText = defenseDirection === 'long' ? '做多' : '做空';
+        const oppositeAttackCondition = invertSarCondition(attackConditionText);
+        const oppositeAttackDirectionText = attackDirection === 'long' ? '做空' : '做多';
+
+        const summary = [
+            `当进攻策略的 SAR 信号（${attackConditionText}）被触发时，系统会按照当前进攻方向（${attackDirectionText}）自动开仓。`,
+            hasDefenseSar
+                ? `若防守策略也启用了 SAR 信号，系统会立即平掉已有的防守仓位，并进入等待防守信号（${defenseConditionText}）的状态。`
+                : `当前防守策略未启用 SAR 信号，进攻信号触发后不会自动处理防守仓位。`,
+            hasDefenseSar
+                ? `当防守 SAR 监测到 ${defenseConditionText} 时，将按照防守方向（${defenseDirectionText}）执行开仓，与进攻持仓形成对冲。`
+                : null,
+            `当进攻信号反向（${oppositeAttackCondition}）触发时，系统会平掉防守仓位，并准备寻找下一次${oppositeAttackDirectionText}的机会。`
+        ].filter(Boolean);
+
+        const chainNodes = [
+            {
+                key: 'attack-trigger',
+                title: '进攻触发',
+                detail: `SAR ${attackConditionText} → ${attackDirectionText} 开仓`
+            },
+            {
+                key: 'defense-close',
+                title: '防守平仓',
+                detail: hasDefenseSar
+                    ? '立刻平掉防守仓位，进入等待状态'
+                    : '未启用防守 SAR，跳过自动平仓'
+            },
+            {
+                key: 'defense-entry',
+                title: '防守反向',
+                detail: hasDefenseSar
+                    ? `等待 ${defenseConditionText} → ${defenseDirectionText} 开仓`
+                    : '无防守 SAR 信号'
+            },
+            {
+                key: 'reset-cycle',
+                title: '循环重置',
+                detail: `进攻转为 ${oppositeAttackCondition} → 防守平仓 → 待 ${oppositeAttackDirectionText}`
+            }
+        ];
+
+        return (
+            <div className="bg-white border border-slate-200 rounded-xl shadow p-6 space-y-5">
+                <StrategySectionTitle icon="🔗" text="策略联动说明" />
+                <div className="space-y-3 text-sm text-slate-600">
+                    {summary.map((line, index) => (
+                        <div key={`summary-${index}`} className="flex items-start gap-2">
+                            <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-xs font-semibold">
+                                {index + 1}
+                            </span>
+                            <span className="flex-1 leading-relaxed">{line}</span>
+                        </div>
+                    ))}
+                </div>
+                <div>
+                    <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">联动链</div>
+                    <div className="flex flex-wrap md:flex-nowrap items-stretch gap-3">
+                        {chainNodes.map((node, index) => (
+                            <React.Fragment key={node.key}>
+                                <div className="flex-1 min-w-[180px] bg-emerald-50 border border-emerald-200 rounded-lg p-4 shadow-sm">
+                                    <div className="text-sm font-semibold text-emerald-700">{node.title}</div>
+                                    <div className="mt-2 text-xs text-emerald-600 leading-relaxed">
+                                        {node.detail}
+                                    </div>
+                                </div>
+                                {index < chainNodes.length - 1 && (
+                                    <div className="hidden md:flex items-center text-emerald-400 text-lg">
+                                        ➜
+                                    </div>
+                                )}
+                            </React.Fragment>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     const StrategyConfigPage = ({
         strategyForm,
         onFormChange,
@@ -860,6 +1025,13 @@
                             />
                         </div>
 
+                        <StrategyLinkageSummary
+                            attackSignals={signals.attack}
+                            defenseSignals={signals.defense}
+                            attackDirection={strategyForm.attackDirection}
+                            defenseDirection={defenseDirection}
+                        />
+
                         <div className="flex gap-3">
                             <button
                                 onClick={onSave}
@@ -975,6 +1147,7 @@
             attack: [createSignal('attack')],
             defense: [createSignal('defense')]
         });
+        const [strategyRuntime, setStrategyRuntime] = useState({});
         const [strategyForm, setStrategyForm] = useState({
             name: '',
             selectedAccounts: [],
@@ -1007,73 +1180,210 @@
             setExecutions(prev => [{ id: executionCounter.current, ...entry }, ...prev]);
         };
 
-        const simulateStrategyTrigger = (strategy, type) => {
-            const direction = strategy.directions[type] ?? 'long';
-            const directionLabel = directionTexts[direction];
-            const symbol = `${strategy.asset}-USDT`;
-            const amount = strategy.asset === 'BTC'
-                ? (Math.random() * 0.05 + 0.01).toFixed(3)
-                : (Math.random() * 3 + 1).toFixed(2);
-            const openPrice = strategy.asset === 'BTC'
-                ? (28000 + Math.random() * 1000).toFixed(2)
-                : (1800 + Math.random() * 100).toFixed(2);
-            const closePrice = (parseFloat(openPrice) + (Math.random() * 200 - 80)).toFixed(2);
-            const pnlRaw = (parseFloat(closePrice) - parseFloat(openPrice)) * parseFloat(amount) * (direction === 'long' ? 1 : -1);
-            const pnl = parseFloat(pnlRaw.toFixed(2));
+                        const simulateStrategyTrigger = (strategy, type) => {
             const accountName = strategy.accounts[0] ?? '主账号';
+            const currentRuntime = strategyRuntime[strategy.name] ?? createStrategyRuntimeState(strategy);
+            const runtime = {
+                ...currentRuntime,
+                attackPosition: currentRuntime.attackPosition ? { ...currentRuntime.attackPosition } : null,
+                defensePosition: currentRuntime.defensePosition ? { ...currentRuntime.defensePosition } : null
+            };
 
-            addLog({
-                timestamp: nowString(),
-                account: accountName,
-                strategy: strategy.name,
-                type: type === 'attack' ? '进攻' : '防守',
-                message: '📈 信号触发: SAR 上穿 + RSI > 70',
-                details: []
-            });
+            if (strategyForm.name && strategy.name === strategyForm.name) {
+                const hasDefenseSar = signals.defense.some(signal => signal.indicator === 'sar');
+                runtime.defenseSarEnabled = hasDefenseSar;
+                if (!hasDefenseSar) {
+                    runtime.defensePosition = null;
+                    runtime.waitingDefenseSignal = false;
+                }
+            }
 
-            addLog({
-                timestamp: nowString(),
-                account: accountName,
-                strategy: strategy.name,
-                type: type === 'attack' ? '进攻' : '防守',
-                message: '✅ 下单成功',
-                details: [
-                    { label: '交易对', value: symbol },
-                    { label: '方向', value: directionLabel, tone: direction },
-                    { label: '数量', value: `${amount} ${strategy.asset}` }
-                ]
-            });
+            const logs = [];
+            const executions = [];
+            let tradeCount = 0;
 
-            addLog({
-                timestamp: nowString(),
-                account: accountName,
-                strategy: strategy.name,
-                type: type === 'attack' ? '进攻' : '防守',
-                message: '💰 订单成交',
-                details: [
-                    { label: '成交价', value: `$${openPrice}` },
-                    { label: '成交额', value: `$${(parseFloat(openPrice) * parseFloat(amount)).toFixed(2)}` }
-                ]
-            });
+            const pushLog = ({ type: logType, message, details = [] }) => {
+                logs.push({
+                    timestamp: nowString(),
+                    account: accountName,
+                    strategy: strategy.name,
+                    type: logType,
+                    message,
+                    details
+                });
+            };
 
-            addExecution({
-                time: timeString(),
-                account: accountName,
-                strategy: strategy.name,
-                type: type === 'attack' ? '进攻' : '防守',
-                symbol,
-                direction,
-                amount,
-                open: parseFloat(openPrice),
-                close: parseFloat(closePrice),
-                pnl,
-                remark: ['SAR 上穿触发', '突破 24H 高点', '止盈平仓', '止损退出'][Math.floor(Math.random() * 4)]
-            });
+            const pushExecution = (payload) => {
+                executions.push({
+                    time: timeString(),
+                    account: accountName,
+                    strategy: strategy.name,
+                    ...payload
+                });
+                tradeCount += 1;
+            };
 
-            setStats(prev => ({
+            if (type === 'attack') {
+                const direction = runtime.nextAttackDirection ?? 'long';
+                const condition = sarConditionText(direction);
+
+                pushLog({
+                    type: '进攻',
+                    message: `🎯 进攻信号触发：${condition}`
+                });
+
+                if (runtime.attackPosition) {
+                    const { closePrice, pnl } = closePositionSnapshot(runtime.attackPosition);
+                    pushLog({
+                        type: '进攻',
+                        message: '🔚 进攻仓位平仓',
+                        details: [
+                            { label: '平仓价格', value: `$${closePrice}` },
+                            { label: '盈亏', value: `${pnl >= 0 ? '+' : ''}${pnl} USDT` }
+                        ]
+                    });
+                    pushExecution({
+                        type: '进攻',
+                        symbol: runtime.attackPosition.symbol,
+                        direction: runtime.attackPosition.direction,
+                        amount: runtime.attackPosition.amount.toString(),
+                        open: runtime.attackPosition.openPrice,
+                        close: closePrice,
+                        pnl,
+                        remark: '进攻信号反转平仓'
+                    });
+                    runtime.attackPosition = null;
+                }
+
+                const newAttackPosition = createPositionSnapshot(strategy, direction);
+                runtime.attackPosition = newAttackPosition;
+                runtime.nextAttackDirection = oppositeDirection(direction);
+
+                pushLog({
+                    type: '进攻',
+                    message: `🛒 进攻开仓：${directionTexts[direction]} ${newAttackPosition.amountDisplay}`,
+                    details: [
+                        { label: '交易品种', value: newAttackPosition.symbol },
+                        { label: '方向', value: directionTexts[direction], tone: direction },
+                        { label: '开仓价格', value: `$${newAttackPosition.openPrice}` }
+                    ]
+                });
+                pushLog({
+                    type: '进攻',
+                    message: '💰 进攻订单成交',
+                    details: [
+                        { label: '成交金额', value: `$${newAttackPosition.openNotional}` }
+                    ]
+                });
+                pushExecution({
+                    type: '进攻',
+                    symbol: newAttackPosition.symbol,
+                    direction,
+                    amount: newAttackPosition.amount.toString(),
+                    open: newAttackPosition.openPrice,
+                    close: newAttackPosition.openPrice,
+                    pnl: 0,
+                    remark: randomRemark('attack')
+                });
+
+                if (runtime.defenseSarEnabled) {
+                    if (runtime.defensePosition) {
+                        const { closePrice, pnl } = closePositionSnapshot(runtime.defensePosition);
+                        pushLog({
+                            type: '防守',
+                            message: '⚠️ 防守仓位被动平仓（进攻信号反向）',
+                            details: [
+                                { label: '平仓价格', value: `$${closePrice}` },
+                                { label: '盈亏', value: `${pnl >= 0 ? '+' : ''}${pnl} USDT` }
+                            ]
+                        });
+                        pushExecution({
+                            type: '防守',
+                            symbol: runtime.defensePosition.symbol,
+                            direction: runtime.defensePosition.direction,
+                            amount: runtime.defensePosition.amount.toString(),
+                            open: runtime.defensePosition.openPrice,
+                            close: closePrice,
+                            pnl,
+                            remark: '防守仓位被动平仓'
+                        });
+                        runtime.defensePosition = null;
+                    }
+                    runtime.waitingDefenseSignal = true;
+                    runtime.nextDefenseDirection = oppositeDirection(direction);
+                    pushLog({
+                        type: '防守',
+                        message: `🛡️ 防守进入待命：等待 ${sarConditionText(runtime.nextDefenseDirection)}`
+                    });
+                }
+            } else {
+                const direction = runtime.nextDefenseDirection ?? oppositeDirection(runtime.nextAttackDirection ?? 'long');
+                const condition = sarConditionText(direction);
+
+                pushLog({
+                    type: '防守',
+                    message: `🛡️ 防守信号触发：${condition}`
+                });
+
+                if (!runtime.defenseSarEnabled) {
+                    pushLog({
+                        type: '防守',
+                        message: 'ℹ️ 当前策略未启用 SAR 防守逻辑，忽略信号'
+                    });
+                } else if (runtime.waitingDefenseSignal) {
+                    const newDefensePosition = createPositionSnapshot(strategy, direction);
+                    runtime.defensePosition = newDefensePosition;
+                    runtime.waitingDefenseSignal = false;
+                    runtime.nextDefenseDirection = oppositeDirection(direction);
+
+                    pushLog({
+                        type: '防守',
+                        message: `✅ 防守开仓：${directionTexts[direction]} ${newDefensePosition.amountDisplay}`,
+                        details: [
+                            { label: '交易品种', value: newDefensePosition.symbol },
+                            { label: '方向', value: directionTexts[direction], tone: direction },
+                            { label: '开仓价格', value: `$${newDefensePosition.openPrice}` }
+                        ]
+                    });
+                    pushExecution({
+                        type: '防守',
+                        symbol: newDefensePosition.symbol,
+                        direction,
+                        amount: newDefensePosition.amount.toString(),
+                        open: newDefensePosition.openPrice,
+                        close: newDefensePosition.openPrice,
+                        pnl: 0,
+                        remark: randomRemark('defense')
+                    });
+                } else if (runtime.defensePosition) {
+                    pushLog({
+                        type: '防守',
+                        message: 'ℹ️ 防守仓位已在运行，维持当前持仓',
+                        details: [
+                            { label: '持仓方向', value: directionTexts[runtime.defensePosition.direction], tone: runtime.defensePosition.direction },
+                            { label: '开仓价格', value: `$${runtime.defensePosition.openPrice}` }
+                        ]
+                    });
+                } else {
+                    runtime.waitingDefenseSignal = true;
+                    runtime.nextDefenseDirection = direction;
+                }
+            }
+
+            setStrategyRuntime(prev => ({
                 ...prev,
-                totalTrades: prev.totalTrades + 1
+                [strategy.name]: runtime
             }));
+
+            logs.forEach(addLog);
+            executions.forEach(addExecution);
+
+            if (tradeCount > 0) {
+                setStats(prev => ({
+                    ...prev,
+                    totalTrades: prev.totalTrades + tradeCount
+                }));
+            }
         };
 
         const handleFormChange = (field, value) => {
