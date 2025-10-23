@@ -39,7 +39,7 @@
         sar: {
             name: '抛物线转向 (SAR)',
             fields: [
-                { name: 'condition', label: '触发条件', type: 'select', default: 'K线上穿', options: ['K线上穿', 'K线下穿'] },
+                { name: 'condition', label: '触发条件', type: 'select', default: 'K线上穿', options: ['K线上穿', 'K线下穿', '上穿或下穿'] },
                 { name: 'step', label: '步长', type: 'number', default: '0.02', step: '0.01', min: '0', max: '1' },
                 { name: 'max', label: '最大步长', type: 'number', default: '0.2', step: '0.01', min: '0', max: '1' }
             ]
@@ -222,7 +222,8 @@
 
     const directionTexts = {
         long: '开多',
-        short: '开空'
+        short: '开空',
+        auto: '自动'
     };
 
     const directionTone = dir => (dir === 'long' ? 'text-emerald-600' : 'text-rose-500');
@@ -637,7 +638,7 @@
         </div>
     );
 
-    const SignalItem = ({ index, data, onChangeIndicator, onChangeField, onRemove, canRemove }) => {
+    const SignalItem = ({ index, data, onChangeIndicator, onChangeField, onRemove, canRemove, sectionType }) => {
         const definition = indicatorDefinitions[data.indicator];
         return (
             <div className="bg-white border border-slate-200 rounded-lg p-4 space-y-4 shadow-sm">
@@ -668,15 +669,27 @@
                         <label key={field.name} className="text-sm text-slate-600">
                             {field.label}
                             {field.type === 'select' ? (
-                                <select
-                                    value={data.params[field.name] ?? ''}
-                                    onChange={e => onChangeField(field.name, e.target.value)}
-                                    className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 bg-white"
-                                >
-                                    {field.options.map(option => (
-                                        <option key={option} value={option}>{option}</option>
-                                    ))}
-                                </select>
+                                (() => {
+                                    const isSarCondition = data.indicator === 'sar' && field.name === 'condition';
+                                    let baseOptions = field.options || [];
+                                    // 防守策略不需要'上穿或下穿'选项
+                                    if (sectionType === 'defense' && isSarCondition) {
+                                        baseOptions = baseOptions.filter(opt => opt !== '上穿或下穿');
+                                    }
+                                    const extraOptions = sectionType === 'defense' && isSarCondition ? ['进攻方向相反'] : [];
+                                    const options = [...baseOptions, ...extraOptions];
+                                    return (
+                                        <select
+                                            value={data.params[field.name] ?? ''}
+                                            onChange={e => onChangeField(field.name, e.target.value)}
+                                            className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 bg-white"
+                                        >
+                                            {options.map(option => (
+                                                <option key={option} value={option}>{option}</option>
+                                            ))}
+                                        </select>
+                                    );
+                                })()
                             ) : (
                                 <input
                                     type="number"
@@ -712,6 +725,7 @@
                         key={signal.id}
                         index={index + 1}
                         data={signal}
+                        sectionType={type}
                         onChangeIndicator={(indicator) => onIndicatorChange(type, signal.id, indicator)}
                         onChangeField={(field, value) => onFieldChange(type, signal.id, field, value)}
                         onRemove={() => onRemove(type, signal.id)}
@@ -787,10 +801,11 @@
         const getConditionText = (signals) => signals[0]?.params?.condition ?? 'K线上穿';
         const attackConditionText = getConditionText(attackSarSignals);
         const defenseConditionText = getConditionText(defenseSarSignals);
-        const attackDirectionText = attackDirection === 'long' ? '做多' : '做空';
-        const defenseDirectionText = defenseDirection === 'long' ? '做多' : '做空';
+        const attackDirectionText = attackDirection === 'long' ? '做多' : (attackDirection === 'short' ? '做空' : '自动');
+        const computedDefenseDirectionText = defenseDirection === 'long' ? '做多' : '做空';
+        const defenseDirectionText = attackDirection === 'auto' ? '自动' : computedDefenseDirectionText;
         const oppositeAttackCondition = invertSarCondition(attackConditionText);
-        const oppositeAttackDirectionText = attackDirection === 'long' ? '做空' : '做多';
+        const oppositeAttackDirectionText = attackDirection === 'long' ? '做空' : (attackDirection === 'short' ? '做多' : '自动');
 
         const summary = [
             `当进攻策略的 SAR 信号（${attackConditionText}）被触发时，系统会按照当前进攻方向（${attackDirectionText}）自动开仓。`,
@@ -940,7 +955,7 @@
                                 <label className="text-sm text-slate-600">
                                     开仓方向
                                     <div className="mt-2 flex gap-4">
-                                        {['long', 'short'].map(direction => (
+                                        {['long', 'short', 'auto'].map(direction => (
                                             <label key={direction} className="flex items-center gap-2 text-sm text-slate-700">
                                                 <input
                                                     type="radio"
@@ -948,6 +963,7 @@
                                                     value={direction}
                                                     checked={strategyForm.attackDirection === direction}
                                                     onChange={e => onFormChange('attackDirection', e.target.value)}
+                                                    disabled={true}
                                                 />
                                                 {directionTexts[direction]}
                                             </label>
@@ -995,8 +1011,8 @@
                                     开仓方向
                                     <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-slate-600">
                                         防守策略开仓方向自动与进攻策略相反，当前方向：
-                                        <span className={`ml-2 font-semibold ${directionTone(defenseDirection)}`}>
-                                            {directionTexts[defenseDirection]}
+                                        <span className={`ml-2 font-semibold ${strategyForm.attackDirection === 'auto' ? 'text-slate-600' : directionTone(defenseDirection)}`}>
+                                            {strategyForm.attackDirection === 'auto' ? '自动' : directionTexts[defenseDirection]}
                                         </span>
                                     </div>
                                 </div>
@@ -1426,6 +1442,24 @@
                     ? { ...signal, indicator, params: buildDefaultFields(indicator) }
                     : signal)
             }));
+
+            // Auto-update attack direction when SAR indicator is selected
+            if (type === 'attack' && indicator === 'sar') {
+                const defaultFields = buildDefaultFields(indicator);
+                const condition = defaultFields.condition || 'K线上穿';
+                let newDirection = 'long';
+                if (condition === 'K线上穿') {
+                    newDirection = 'long';
+                } else if (condition === 'K线下穿') {
+                    newDirection = 'short';
+                } else if (condition === '上穿或下穿') {
+                    newDirection = 'auto';
+                }
+                setStrategyForm(prev => ({
+                    ...prev,
+                    attackDirection: newDirection
+                }));
+            }
         };
 
         const handleSignalFieldChange = (type, id, field, value) => {
@@ -1435,6 +1469,25 @@
                     ? { ...signal, params: { ...signal.params, [field]: value } }
                     : signal)
             }));
+
+            // Auto-update attack direction based on SAR condition
+            if (type === 'attack' && field === 'condition') {
+                const signal = signals.attack.find(s => s.id === id);
+                if (signal && signal.indicator === 'sar') {
+                    let newDirection = 'auto';
+                    if (value === 'K线上穿') {
+                        newDirection = 'long';
+                    } else if (value === 'K线下穿') {
+                        newDirection = 'short';
+                    } else if (value === '上穿或下穿') {
+                        newDirection = 'auto';
+                    }
+                    setStrategyForm(prev => ({
+                        ...prev,
+                        attackDirection: newDirection
+                    }));
+                }
+            }
         };
 
         const handleFormulaChange = (type, formula) => {
