@@ -107,7 +107,8 @@
         atr: [
             { name: 'multiplier', label: 'ATR 倍数', type: 'number', default: '1.5', step: '0.1', min: '0' },
             { name: 'period', label: 'ATR 周期', type: 'number', default: '14', min: '1' }
-        ]
+        ],
+        'match-attack': []
     };
 
     const defaultStrategies = [
@@ -757,6 +758,9 @@
                         <option value="fixed-ratio">固定比例</option>
                         <option value="fixed-amount">固定金额</option>
                         <option value="atr">ATR 动态仓位</option>
+                        {type === 'defense' && (
+                            <option value="match-attack">与进攻持仓量一致</option>
+                        )}
                     </select>
                 </label>
                 <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm space-y-3">
