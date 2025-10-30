@@ -118,6 +118,46 @@
         'match-attack': []
     };
 
+    const marketCatalog = [
+        {
+            value: 'ETH-USDT-SWAP',
+            asset: 'ETH',
+            label: 'ETH/USDT 永续',
+            description: '主流永续合约，适合高流动性策略',
+            priceRange: { min: 1600, max: 2200 },
+            amountRange: { min: 0.5, max: 3, precision: 2 }
+        },
+        {
+            value: 'BTC-USDT-SWAP',
+            asset: 'BTC',
+            label: 'BTC/USDT 永续',
+            description: '旗舰品种，资金深度充足',
+            priceRange: { min: 26000, max: 32000 },
+            amountRange: { min: 0.01, max: 0.1, precision: 3 }
+        },
+        {
+            value: 'SOL-USDT-SWAP',
+            asset: 'SOL',
+            label: 'SOL/USDT 永续',
+            description: '适合中高波动策略的热门合约',
+            priceRange: { min: 18, max: 28 },
+            amountRange: { min: 5, max: 50, precision: 1 }
+        },
+        {
+            value: 'XRP-USDT-SWAP',
+            asset: 'XRP',
+            label: 'XRP/USDT 永续',
+            description: '低面值合约，方便网格与套利策略',
+            priceRange: { min: 0.45, max: 0.7 },
+            amountRange: { min: 100, max: 500, precision: 0 }
+        }
+    ];
+
+    const marketMetaMap = marketCatalog.reduce((acc, market) => {
+        acc[market.value] = market;
+        return acc;
+    }, {});
+
     const defaultStrategies = [
         {
             name: 'BTC-SAR-突破策略',
@@ -125,6 +165,7 @@
             createdAt: '2025-10-08 14:30',
             status: { attack: '运行中', defense: '已停止' },
             asset: 'BTC',
+            market: 'BTC-USDT-SWAP',
             directions: { attack: 'long', defense: 'short' }
         },
         {
@@ -133,6 +174,7 @@
             createdAt: '2025-10-07 09:15',
             status: { attack: '运行中', defense: '运行中' },
             asset: 'ETH',
+            market: 'ETH-USDT-SWAP',
             directions: { attack: 'long', defense: 'short' }
         }
     ];
@@ -176,7 +218,7 @@
             type: '进攻',
             message: '✅ 下单成功',
             details: [
-                { label: '交易对', value: 'BTC-USDT' },
+                { label: '交易对', value: 'BTC-USDT-SWAP' },
                 { label: '方向', value: '开多', tone: 'long' },
                 { label: '数量', value: '0.05 BTC' }
             ]
@@ -202,7 +244,7 @@
             account: '主账号',
             strategy: 'BTC-SAR-突破策略',
             type: '进攻',
-            symbol: 'BTC-USDT',
+            symbol: 'BTC-USDT-SWAP',
             direction: 'long',
             amount: '0.05',
             open: 28450,
@@ -216,7 +258,7 @@
             account: '备用账号',
             strategy: 'ETH-周期极值策略',
             type: '防守',
-            symbol: 'ETH-USDT',
+            symbol: 'ETH-USDT-SWAP',
             direction: 'short',
             amount: '2.5',
             open: 1845,
@@ -280,6 +322,33 @@
 
     const oppositeDirection = (direction) => direction === 'long' ? 'short' : 'long';
 
+    const resolveMarketInfo = (strategy = {}) => {
+        const preferredMarket = strategy.market ?? (strategy.asset ? `${strategy.asset}-USDT-SWAP` : null);
+        if (preferredMarket && marketMetaMap[preferredMarket]) {
+            return { market: preferredMarket, meta: marketMetaMap[preferredMarket] };
+        }
+        if (preferredMarket) {
+            const baseAsset = preferredMarket.split('-')[0] || strategy.asset || 'BTC';
+            return {
+                market: preferredMarket,
+                meta: {
+                    asset: baseAsset,
+                    priceRange: { min: 26000, max: 32000 },
+                    amountRange: { min: 0.01, max: 0.1, precision: 3 }
+                }
+            };
+        }
+        const fallback = marketMetaMap['BTC-USDT-SWAP'] ?? marketCatalog[0];
+        return {
+            market: fallback?.value ?? 'BTC-USDT-SWAP',
+            meta: fallback ?? {
+                asset: 'BTC',
+                priceRange: { min: 26000, max: 32000 },
+                amountRange: { min: 0.01, max: 0.1, precision: 3 }
+            }
+        };
+    };
+
     const sarConditionText = (direction) => direction === 'long' ? 'K线上穿 SAR' : 'K线下穿 SAR';
 
     const createStrategyRuntimeState = (strategy) => {
@@ -296,20 +365,20 @@
     };
 
     const createPositionSnapshot = (strategy, direction) => {
-        const asset = strategy.asset ?? 'BTC';
-        const symbol = `${asset}-USDT`;
-        const amount = asset === 'BTC'
-            ? parseFloat((Math.random() * 0.05 + 0.01).toFixed(3))
-            : parseFloat((Math.random() * 3 + 1).toFixed(2));
-        const basePrice = asset === 'BTC'
-            ? 28000 + Math.random() * 1000
-            : asset === 'ETH'
-                ? 1800 + Math.random() * 100
-                : 100 + Math.random() * 20;
+        const { market, meta } = resolveMarketInfo(strategy);
+        const asset = strategy.asset ?? meta.asset ?? (market?.split('-')[0] ?? 'BTC');
+        const amountRange = meta?.amountRange ?? { min: 0.01, max: 0.1, precision: 3 };
+        const priceRange = meta?.priceRange ?? { min: 26000, max: 32000 };
+        const precision = typeof amountRange.precision === 'number' ? amountRange.precision : 3;
+        const amountSpan = Math.max(amountRange.max - amountRange.min, 0.0001);
+        const randomAmount = amountRange.min + Math.random() * amountSpan;
+        const amount = parseFloat(randomAmount.toFixed(precision));
+        const priceSpan = Math.max(priceRange.max - priceRange.min, 0.01);
+        const basePrice = priceRange.min + Math.random() * priceSpan;
         const openPrice = parseFloat(basePrice.toFixed(2));
         return {
             direction,
-            symbol,
+            symbol: market,
             amount,
             amountDisplay: `${amount} ${asset}`,
             openPrice,
@@ -389,6 +458,7 @@
                 <thead className="bg-slate-900 text-white">
                 <tr>
                     <th className="px-4 py-3 text-left font-medium">策略名称</th>
+                    <th className="px-4 py-3 text-left font-medium">交易合约</th>
                     <th className="px-4 py-3 text-left font-medium">关联账号</th>
                     <th className="px-4 py-3 text-left font-medium">进攻策略</th>
                     <th className="px-4 py-3 text-left font-medium">防守策略</th>
@@ -397,43 +467,48 @@
                 </tr>
                 </thead>
                 <tbody>
-                {strategies.map(strategy => (
-                    <tr key={strategy.name} className="border-b border-slate-200 last:border-none hover:bg-slate-50">
-                        <td className="px-4 py-3 font-medium text-slate-800">{strategy.name}</td>
-                        <td className="px-4 py-3 space-x-2">
-                            {strategy.accounts.map(acc => (
-                                <span key={acc} className="inline-block bg-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-1 rounded-full">
-                                    {acc}
+                {strategies.map(strategy => {
+                    const marketInfo = marketMetaMap[strategy.market] ?? marketCatalog.find(item => item.value === strategy.market) ?? null;
+                    const marketLabel = marketInfo?.label ?? strategy.market ?? `${strategy.asset ?? 'BTC'}-USDT-SWAP`;
+                    return (
+                        <tr key={strategy.name} className="border-b border-slate-200 last:border-none hover:bg-slate-50">
+                            <td className="px-4 py-3 font-medium text-slate-800">{strategy.name}</td>
+                            <td className="px-4 py-3 text-slate-600">{marketLabel}</td>
+                            <td className="px-4 py-3 space-x-2">
+                                {strategy.accounts.map(acc => (
+                                    <span key={acc} className="inline-block bg-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-1 rounded-full">
+                                        {acc}
+                                    </span>
+                                ))}
+                            </td>
+                            <td className="px-4 py-3">
+                                <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${statusTone(strategy.status.attack)}`}>
+                                    {strategy.status.attack}
                                 </span>
-                            ))}
-                        </td>
-                        <td className="px-4 py-3">
-                            <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${statusTone(strategy.status.attack)}`}>
-                                {strategy.status.attack}
-                            </span>
-                        </td>
-                        <td className="px-4 py-3">
-                            <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${statusTone(strategy.status.defense)}`}>
-                                {strategy.status.defense}
-                            </span>
-                        </td>
-                        <td className="px-4 py-3 text-slate-500">{strategy.createdAt}</td>
-                        <td className="px-4 py-3 space-x-2">
-                            <button
-                                onClick={() => onSimulate(strategy, 'attack')}
-                                className="px-3 py-1.5 text-xs font-semibold rounded bg-emerald-500 text-white hover:bg-emerald-600 transition"
-                            >
-                                模拟触发
-                            </button>
-                            <button className="px-3 py-1.5 text-xs font-semibold rounded bg-slate-200 text-slate-700 hover:bg-slate-300 transition">
-                                编辑
-                            </button>
-                            <button className="px-3 py-1.5 text-xs font-semibold rounded bg-rose-500 text-white hover:bg-rose-600 transition">
-                                删除
-                            </button>
-                        </td>
-                    </tr>
-                ))}
+                            </td>
+                            <td className="px-4 py-3">
+                                <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${statusTone(strategy.status.defense)}`}>
+                                    {strategy.status.defense}
+                                </span>
+                            </td>
+                            <td className="px-4 py-3 text-slate-500">{strategy.createdAt}</td>
+                            <td className="px-4 py-3 space-x-2">
+                                <button
+                                    onClick={() => onSimulate(strategy, 'attack')}
+                                    className="px-3 py-1.5 text-xs font-semibold rounded bg-emerald-500 text-white hover:bg-emerald-600 transition"
+                                >
+                                    模拟触发
+                                </button>
+                                <button className="px-3 py-1.5 text-xs font-semibold rounded bg-slate-200 text-slate-700 hover:bg-slate-300 transition">
+                                    编辑
+                                </button>
+                                <button className="px-3 py-1.5 text-xs font-semibold rounded bg-rose-500 text-white hover:bg-rose-600 transition">
+                                    删除
+                                </button>
+                            </td>
+                        </tr>
+                    );
+                })}
                 </tbody>
             </table>
         </div>
@@ -793,7 +868,7 @@
         );
     };
 
-    const StrategyLinkageSummary = ({ attackSignals, defenseSignals, attackDirection, defenseDirection }) => {
+    const StrategyLinkageSummary = ({ attackSignals, defenseSignals, attackDirection, defenseDirection, market }) => {
         const attackSarSignals = attackSignals.filter(signal => signal.indicator === 'sar');
         if (attackSarSignals.length === 0) {
             return (
@@ -808,6 +883,7 @@
 
         const defenseSarSignals = defenseSignals.filter(signal => signal.indicator === 'sar');
         const hasDefenseSar = defenseSarSignals.length > 0;
+        const marketInfo = marketMetaMap[market] ?? marketCatalog.find(item => item.value === market) ?? null;
 
         const getConditionText = (signals) => signals[0]?.params?.condition ?? 'K线上穿';
         const attackConditionText = getConditionText(attackSarSignals);
@@ -819,6 +895,9 @@
         const oppositeAttackDirectionText = attackDirection === 'long' ? '做空' : (attackDirection === 'short' ? '做多' : '自动');
 
         const summary = [
+            marketInfo
+                ? `当前策略绑定合约：${marketInfo.label}（${marketInfo.description}）`
+                : `当前策略绑定合约：${market || '未选择'}`,
             `当进攻策略的 SAR 信号（${attackConditionText}）被触发时，系统会按照当前进攻方向（${attackDirectionText}）自动开仓。`,
             hasDefenseSar
                 ? `若防守策略也启用了 SAR 信号，系统会立即平掉已有的防守仓位，并进入等待防守信号（${defenseConditionText}）的状态。`
@@ -908,6 +987,7 @@
         onPositionFieldChange,
         onSave
     }) => {
+        const activeMarket = marketMetaMap[strategyForm.market] ?? marketCatalog[0];
         const defenseDirection = strategyForm.attackDirection === 'long'
             ? 'short'
             : strategyForm.attackDirection === 'short'
@@ -927,6 +1007,25 @@
                                     className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2"
                                     placeholder="请输入策略名称"
                                 />
+                            </label>
+                            <label className="block text-sm text-slate-600">
+                                交易合约
+                                <select
+                                    value={strategyForm.market}
+                                    onChange={e => onFormChange('market', e.target.value)}
+                                    className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 bg-white"
+                                >
+                                    {marketCatalog.map(item => (
+                                        <option key={item.value} value={item.value}>
+                                            {item.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                <div className="mt-2 text-xs text-slate-500 leading-relaxed">
+                                    {activeMarket
+                                        ? `已选择 ${activeMarket.label} · ${activeMarket.description}`
+                                        : '请选择策略使用的交易合约'}
+                                </div>
                             </label>
                             <div>
                                 <div className="text-sm text-slate-600 mb-2">关联账号（可多选）</div>
@@ -1052,6 +1151,7 @@
                             defenseSignals={signals.defense}
                             attackDirection={strategyForm.attackDirection}
                             defenseDirection={defenseDirection}
+                            market={strategyForm.market}
                         />
 
                         <div className="flex gap-3">
@@ -1172,6 +1272,7 @@
         const [strategyRuntime, setStrategyRuntime] = useState({});
         const [strategyForm, setStrategyForm] = useState({
             name: '',
+            market: 'ETH-USDT-SWAP',
             selectedAccounts: [],
             attackDirection: 'auto',
             attackLeverage: 10,
@@ -1526,14 +1627,18 @@
                 alert('请至少选择一个账号');
                 return;
             }
-            alert(`策略配置已保存，关联账号: ${strategyForm.selectedAccounts.join(', ')}`);
+            const marketInfo = marketMetaMap[strategyForm.market] ?? marketCatalog.find(item => item.value === strategyForm.market) ?? null;
+            const marketLabel = marketInfo?.label ?? strategyForm.market ?? '未选择';
+            alert(`策略配置已保存，关联账号: ${strategyForm.selectedAccounts.join(', ')}，交易合约: ${marketLabel}`);
             addLog({
                 timestamp: nowString(),
                 account: '系统',
                 strategy: strategyForm.name || '新策略',
                 type: '',
                 message: '📝 新策略已创建并保存',
-                details: []
+                details: [
+                    { label: '交易合约', value: marketLabel }
+                ]
             });
             setActivePage('dashboard');
         };
