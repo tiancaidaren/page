@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>渠道按日汇总可视化（稳健版）</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- 必要库 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+      :root {
+        --bg: #0b1020;
+        --card: #121a33;
+        --muted: #7881a1;
+        --text: #ecf0ff;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #0b1020;
+        color: var(--text);
+        font-family: ui-sans-serif, system-ui, "PingFang SC", "Microsoft YaHei", Arial;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      .card {
+        background: #121a33;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-size: 22px;
+      }
+      .row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .pill {
+        background: #0e1430;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        padding: 10px;
+        border-radius: 12px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      select,
+      button,
+      input[type="file"] {
+        background: #0e1430;
+        color: var(--text);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        padding: 8px 10px;
+      }
+      button:hover {
+        border-color: #6ea8fe;
+        cursor: pointer;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        max-height: 120px;
+        overflow: auto;
+        margin-top: 8px;
+      }
+      .legend label {
+        background: #0f1639;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .table-wrap {
+        overflow: auto;
+        max-height: 520px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #0e1430;
+        font-size: 13px;
+        min-width: 760px;
+      }
+      th,
+      td {
+        padding: 9px 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      }
+      th {
+        position: sticky;
+        top: 0;
+        background: #121a33;
+      }
+      .right {
+        text-align: right;
+      }
+      .subtle {
+        color: var(--muted);
+        font-size: 12px;
+        margin-top: 6px;
+      }
+      .spacer {
+        height: 10px;
+      }
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+        font-size: 12px;
+        color: #bfd2ff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <h1>渠道按日汇总 & 折线图（稳健识别渠道列）</h1>
+        <div class="row">
+          <div class="pill">
+            <strong>上传 Excel：</strong>
+            <input id="file" type="file" accept=".xlsx" />
+          </div>
+          <div class="pill">
+            <label for="metric">指标</label>
+            <select id="metric">
+              <option value="当日进粉">当日进粉</option>
+              <option value="当日回复">当日回复</option>
+              <option value="当日回复率">当日回复率（%）</option>
+              <option value="当日股民">当日股民</option>
+              <option value="当日股民率">当日股民率（%）</option>
+            </select>
+          </div>
+          <div class="pill">
+            <button id="selectAll">全选渠道</button>
+            <button id="clearAll">清空渠道</button>
+            <button id="downloadCsv">导出汇总CSV</button>
+          </div>
+        </div>
+
+        <div class="mono" id="debug"></div>
+
+        <canvas id="chart" height="110" style="margin-top: 10px"></canvas>
+        <div class="legend" id="channelFilters"></div>
+        <div class="subtle">
+          说明：程序自动寻找表头（含“当日进粉/当日回复/当日股民”）与“渠道列”。会排除 URL、wa.me
+          链接、纯数字、过长文本等。
+        </div>
+      </div>
+
+      <div class="spacer"></div>
+
+      <div class="card">
+        <h2 style="margin: 0 0 8px; font-size: 18px">汇总数据</h2>
+        <div class="table-wrap">
+          <table id="table"></table>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ---------- 工具 & 规则 ----------
+      const DIGIT_ONLY = /^\d+(\.\d+)?$/;
+      const hasUrl = s => /https?:\/\//i.test(s || "") || /wa\.me/i.test(s || "");
+      const hasBadChars = s => /@/.test(s || "");
+      const normalizeChannelSeparators = s => s.replace(/[、，,;；|｜+＋&﹢·•\\]/g, "/");
+      const normalizeChannelValue = val =>
+        normalizeChannelSeparators(String(val ?? "").trim()).replace(/\s+/g, "");
+      const toNum = v => {
+        const n = parseFloat(String(v ?? "").replace(/,/g, ""));
+        return Number.isFinite(n) ? n : 0;
+      };
+      const pct2 = (num, den) => (den > 0 ? Math.round((num / den) * 10000) / 100 : 0); // 两位小数 %
+
+      // 认为“像渠道名”的值：短、无URL、非纯数字、无特殊符号、不能是整句/长备注
+      function isLikelyChannel(val) {
+        const raw = String(val ?? "").trim();
+        if (!raw) return false;
+        if (hasUrl(raw) || hasBadChars(raw)) return false;
+        if (raw.length > 40) return false;
+        const norm = normalizeChannelSeparators(raw);
+        if (/\s/.test(norm)) return false; // whitespace likely means not a channel
+        const parts = norm.split("/").map(p => p.trim()).filter(Boolean);
+        if (!parts.length || parts.length > 3) return false;
+        for (const part of parts) {
+          if (part.length < 1 || part.length > 16) return false;
+          if (DIGIT_ONLY.test(part)) return false;
+          if (/[^-\w\u4e00-\u9fa5]/.test(part)) return false;
+        }
+        return true;
+      }
+
+      // sheet名转可排序日期
+      function sheetNameToDateKey(name) {
+        const s = String(name).trim();
+        if (/^\d{4}$/.test(s)) return new Date(`2024-10-${s.slice(2)}`);
+        if (/^\d{3}$/.test(s)) return new Date(`2024-11-0${s.slice(1)}`);
+        const d = new Date(s);
+        return isNaN(+d) ? new Date(`2024-10-01`) : d;
+      }
+      const formatDateLabel = name => {
+        const d = sheetNameToDateKey(name);
+        return `${d.getMonth() + 1}-${String(d.getDate()).padStart(2, "0")}`;
+      };
+
+      // 找表头
+      function findHeaderAndIndexes(rows) {
+        const keys = ["当日进粉", "当日回复", "当日股民"];
+        for (let r = 0; r < Math.min(rows.length, 30); r++) {
+          const row = rows[r] || [];
+          const joined = row.map(v => String(v ?? "")).join("|");
+          if (keys.every(k => joined.includes(k))) {
+            return {
+              headerRow: r,
+              colJ: row.findIndex(x => String(x ?? "").includes("当日进粉")),
+              colH: row.findIndex(x => String(x ?? "").includes("当日回复")),
+              colG: row.findIndex(x => String(x ?? "").includes("当日股民")),
+            };
+          }
+        }
+        const fb = rows[1] || [];
+        return {
+          headerRow: 1,
+          colJ: fb.findIndex(x => String(x ?? "").includes("当日进粉")),
+          colH: fb.findIndex(x => String(x ?? "").includes("当日回复")),
+          colG: fb.findIndex(x => String(x ?? "").includes("当日股民")),
+        };
+      }
+
+      // 改进版：识别“渠道列”
+      function guessChannelColumn(rows, headerRow, sheetName) {
+        const dataRows = rows.slice(headerRow + 1);
+        const columns = Math.max(...rows.map(r => (r || []).length));
+        const debug = [];
+
+        if (String(sheetName) === "1025") {
+          const known = ["jinx", "aj", "bai", "tt", "maiya", "xm", "xigua", "xg"];
+          for (let c = 0; c < columns; c++) {
+            const sample = dataRows.map(r => String((r || [])[c] ?? "").trim()).filter(Boolean);
+            const hit = sample.filter(s => isLikelyChannel(s) && known.some(k => new RegExp(`\\b${k}\\b`, "i").test(s))).length;
+            if (hit >= 5) {
+              debug.push(`sheet 1025 shortcut -> col ${c} (hit=${hit})`);
+              setDebug(debug);
+              return c;
+            }
+          }
+        }
+
+        let bestCol = -1;
+        let bestScore = -1;
+        for (let c = columns - 1; c >= 0; c--) {
+          const raw = dataRows.map(r => String((r || [])[c] ?? "").trim());
+          if (raw.every(v => !v)) continue;
+
+          const nonEmpty = raw.filter(Boolean);
+          const urlRatio = nonEmpty.filter(hasUrl).length / nonEmpty.length;
+          if (urlRatio > 0.05) {
+            debug.push(`col ${c} url-heavy ${(urlRatio * 100).toFixed(1)}%`);
+            continue;
+          }
+
+          const digitHeavy =
+            nonEmpty.filter(v => DIGIT_ONLY.test(normalizeChannelSeparators(v))).length / nonEmpty.length;
+          if (digitHeavy > 0.6) {
+            debug.push(`col ${c} numeric ${(digitHeavy * 100).toFixed(1)}%`);
+            continue;
+          }
+
+          const goodVals = nonEmpty.filter(isLikelyChannel);
+          if (!goodVals.length) {
+            debug.push(`col ${c} no channel-like values`);
+            continue;
+          }
+
+          const parts = goodVals
+            .flatMap(v => normalizeChannelSeparators(v).split("/").map(p => p.trim()).filter(Boolean));
+          const uniqParts = new Set(parts);
+          const dupRatio = parts.length ? 1 - uniqParts.size / parts.length : 0;
+          const channelishRatio = goodVals.length / nonEmpty.length;
+          const score = dupRatio * 2.2 + channelishRatio * 1.6 + (1 - urlRatio) * 0.6 + (1 - digitHeavy) * 0.4;
+
+          if (score > bestScore) {
+            bestScore = score;
+            bestCol = c;
+          }
+        }
+
+        debug.push(`pick ${bestCol} score=${bestScore.toFixed(3)}`);
+        setDebug(debug);
+        return bestCol;
+      }
+
+      function setDebug(lines) {
+        const el = document.getElementById("debug");
+        el.textContent = lines.join(" | ");
+      }
+
+      // 聚合工作簿
+      function aggregateWorkbook(wb) {
+        const sheetNames = wb.SheetNames || [];
+        const result = [];
+        const rawByDay = {};
+
+        sheetNames.forEach(name => {
+          const ws = wb.Sheets[name];
+          const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null, blankrows: false });
+          if (!rows || rows.length < 3) return;
+
+          const meta = findHeaderAndIndexes(rows);
+          const chCol = guessChannelColumn(rows, meta.headerRow, name);
+          if (chCol < 0 || meta.colJ < 0 || meta.colH < 0 || meta.colG < 0) return;
+
+          const dayKey = name;
+          rawByDay[dayKey] = rawByDay[dayKey] || {};
+
+          for (let r = meta.headerRow + 1; r < rows.length; r++) {
+            const row = rows[r] || [];
+            const rawVal = row[chCol];
+            if (!isLikelyChannel(rawVal)) continue; // 值级过滤
+            const channel = normalizeChannelValue(rawVal);
+            if (!channel) continue;
+
+            const jinfen = toNum(row[meta.colJ]);
+            const huifu = toNum(row[meta.colH]);
+            const gumin = toNum(row[meta.colG]);
+
+            if (!rawByDay[dayKey][channel]) {
+              rawByDay[dayKey][channel] = { 当日进粉: 0, 当日回复: 0, 当日股民: 0 };
+            }
+            rawByDay[dayKey][channel].当日进粉 += jinfen;
+            rawByDay[dayKey][channel].当日回复 += huifu;
+            rawByDay[dayKey][channel].当日股民 += gumin;
+          }
+        });
+
+        Object.keys(rawByDay).forEach(day => {
+          Object.keys(rawByDay[day]).forEach(ch => {
+            const o = rawByDay[day][ch];
+            result.push({
+              日期: day,
+              渠道名: ch,
+              当日进粉: o.当日进粉,
+              当日回复: o.当日回复,
+              当日回复率: pct2(o.当日回复, o.当日进粉),
+              当日股民: o.当日股民,
+              当日股民率: pct2(o.当日股民, o.当日进粉),
+            });
+          });
+        });
+
+        result.sort((a, b) => {
+          const da = sheetNameToDateKey(a.日期) - sheetNameToDateKey(b.日期);
+          if (da !== 0) return da;
+          return a.渠道名.localeCompare(b.渠道名, "zh-CN");
+        });
+        return result;
+      }
+
+      // ------- 渲染：图 + 过滤 + 表 -------
+      let globalData = [];
+      let chart,
+        channelsAll = new Set();
+
+      function rebuildChannelFilters() {
+        const box = document.getElementById("channelFilters");
+        box.innerHTML = "";
+        channelsAll = new Set(globalData.map(d => d.渠道名));
+        [...channelsAll]
+          .sort((a, b) => a.localeCompare(b, "zh-CN"))
+          .forEach((ch, i) => {
+            const id = "ch_" + i;
+            const lab = document.createElement("label");
+            lab.innerHTML = `<input type="checkbox" id="${id}" data-ch="${ch}" checked> ${ch}`;
+            box.appendChild(lab);
+            lab.querySelector("input").addEventListener("change", drawChart);
+          });
+      }
+      function getSelectedChannels() {
+        return Array.from(document.querySelectorAll("#channelFilters input[type=checkbox]:checked")).map(x =>
+          x.getAttribute("data-ch")
+        );
+      }
+
+      function drawChart() {
+        if (!globalData.length) return;
+        const metric = document.getElementById("metric").value;
+        const channels = getSelectedChannels();
+
+        const days = [...new Set(globalData.map(d => d.日期))].sort(
+          (a, b) => sheetNameToDateKey(a) - sheetNameToDateKey(b)
+        );
+        const datasets = channels.map(ch => {
+          const series = days.map(day => {
+            const row = globalData.find(r => r.日期 === day && r.渠道名 === ch);
+            return row ? row[metric] : 0;
+          });
+          return { label: ch, data: series };
+        });
+
+        const ctx = document.getElementById("chart").getContext("2d");
+        if (chart) chart.destroy();
+        chart = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: days.map(d => `${formatDateLabel(d)}`),
+            datasets: datasets.map(ds => ({
+              label: ds.label,
+              data: ds.data,
+              pointRadius: 2.5,
+              tension: 0.25,
+            })),
+          },
+          options: {
+            responsive: true,
+            interaction: { mode: "nearest", intersect: false },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: { callback: v => (String(metric).includes("率") ? `${v}%` : v) },
+                title: { display: true, text: metric },
+              },
+              x: { title: { display: true, text: "日期" } },
+            },
+            plugins: {
+              legend: { position: "top", labels: { usePointStyle: true } },
+              tooltip: {
+                callbacks: {
+                  label: ctx =>
+                    `${ctx.dataset.label}: ${String(metric).includes("率") ? ctx.parsed.y + "%" : ctx.parsed.y}`,
+                },
+              },
+            },
+          },
+        });
+      }
+
+      function renderTable() {
+        const tbl = document.getElementById("table");
+        if (!globalData.length) {
+          tbl.innerHTML = "";
+          return;
+        }
+        const head = `
+      <thead><tr>
+        <th>日期</th><th>渠道名</th>
+        <th class="right">当日进粉</th><th class="right">当日回复</th><th class="right">当日回复率（%）</th>
+        <th class="right">当日股民</th><th class="right">当日股民率（%）</th>
+      </tr></thead>`;
+        const body = globalData
+          .map(
+            r => `
+      <tr>
+        <td>${formatDateLabel(r.日期)}</td>
+        <td>${r.渠道名}</td>
+        <td class="right">${r.当日进粉}</td>
+        <td class="right">${r.当日回复}</td>
+        <td class="right">${r.当日回复率.toFixed(2)}</td>
+        <td class="right">${r.当日股民}</td>
+        <td class="right">${r.当日股民率.toFixed(2)}</td>
+      </tr>`
+          )
+          .join("");
+        tbl.innerHTML = head + `<tbody>${body}</tbody>`;
+      }
+
+      function exportCsv() {
+        if (!globalData.length) return;
+        const header = ["日期", "渠道名", "当日进粉", "当日回复", "当日回复率(%)", "当日股民", "当日股民率(%)"];
+        const lines = [header.join(",")];
+        globalData.forEach(r => {
+          lines.push(
+            [
+              formatDateLabel(r.日期),
+              `"${r.渠道名.replace(/"/g, '""')}"`,
+              r.当日进粉,
+              r.当日回复,
+              r.当日回复率.toFixed(2),
+              r.当日股民,
+              r.当日股民率.toFixed(2),
+            ].join(",")
+          );
+        });
+        const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "每日渠道汇总.csv";
+        a.click();
+      }
+
+      // 事件
+      document.getElementById("file").addEventListener("change", async e => {
+        const f = e.target.files?.[0];
+        if (!f) return;
+        const buf = await f.arrayBuffer();
+        const wb = XLSX.read(buf, { type: "array" });
+        const data = aggregateWorkbook(wb);
+        // 若误检风险仍高，可考虑：过滤出出现频次>=2次的渠道名
+        // const counts = data.reduce((m,d)=> (m[d.渠道名]=(m[d.渠道名]||0)+1, m), {});
+        // globalData = data.filter(d=> counts[d.渠道名] >= 2);
+        globalData = data;
+        rebuildChannelFilters();
+        renderTable();
+        drawChart();
+      });
+
+      document.getElementById("metric").addEventListener("change", drawChart);
+      document.getElementById("selectAll").addEventListener("click", () => {
+        document.querySelectorAll("#channelFilters input[type=checkbox]").forEach(c => (c.checked = true));
+        drawChart();
+      });
+      document.getElementById("clearAll").addEventListener("click", () => {
+        document.querySelectorAll("#channelFilters input[type=checkbox]").forEach(c => (c.checked = false));
+        drawChart();
+      });
+      document.getElementById("downloadCsv").addEventListener("click", exportCsv);
+    </script>
+  </body>
+</html>
