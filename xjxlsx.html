@@ -177,9 +177,51 @@
       const DIGIT_ONLY = /^\d+(\.\d+)?$/;
       const hasUrl = s => /https?:\/\//i.test(s || "") || /wa\.me/i.test(s || "");
       const hasBadChars = s => /@/.test(s || "");
-      const normalizeChannelSeparators = s => s.replace(/[、，,;；|｜+＋&﹢·•\\]/g, "/");
-      const normalizeChannelValue = val =>
-        normalizeChannelSeparators(String(val ?? "").trim()).replace(/\s+/g, "");
+      const normalizeChannelSeparators = s =>
+        s.replace(/[\u3001\uff0c,;\uff1b|\uff5c+\uff0b&\ufe62\u00b7\u2022\\]/g, "/");
+      const getChannelTokens = val => {
+        const raw = String(val ?? "").trim();
+        if (!raw) return null;
+        if (hasUrl(raw) || hasBadChars(raw)) return null;
+        if (raw.length > 40) return null;
+        const norm = normalizeChannelSeparators(raw);
+        if (/\s/.test(norm)) return null;
+        const parts = norm
+          .split("/")
+          .map(p => p.trim())
+          .filter(Boolean);
+        if (!parts.length || parts.length > 3) return null;
+        const cleaned = [];
+        for (const part of parts) {
+          if (part.length < 1 || part.length > 16) return null;
+          if (DIGIT_ONLY.test(part)) return null;
+          if (/[^-\w\u4e00-\u9fa5]/.test(part)) return null;
+          cleaned.push(part.toLowerCase());
+        }
+        const uniq = Array.from(new Set(cleaned));
+        uniq.sort((a, b) => a.localeCompare(b, "zh-CN"));
+        return uniq;
+      };
+      const normalizeChannelValue = val => {
+        const tokens = getChannelTokens(val);
+        return tokens ? tokens.join("/") : "";
+      };
+      const FIELD_DATE = "日期";
+      const FIELD_CHANNEL = "渠道名";
+      const METRIC_JINFEN = "当日进粉";
+      const METRIC_HUIFU = "当日回复";
+      const METRIC_HUIFU_RATE = "当日回复率（%）";
+      const METRIC_GUMIN = "当日股民";
+      const METRIC_GUMIN_RATE = "当日股民率（%）";
+      const METRIC_KEYS = [METRIC_JINFEN, METRIC_HUIFU, METRIC_HUIFU_RATE, METRIC_GUMIN, METRIC_GUMIN_RATE];
+      const PERCENT_METRICS = new Set([METRIC_HUIFU_RATE, METRIC_GUMIN_RATE]);
+      const isPercentMetric = key => PERCENT_METRICS.has(key) || /率/.test(String(key));
+      const formatMetricValue = (key, value) => {
+        if (value === null || value === undefined || value === "") return "-";
+        const num = Number(value);
+        if (!Number.isFinite(num)) return value;
+        return isPercentMetric(key) ? `${num.toFixed(2)}%` : num;
+      };
       const toNum = v => {
         const n = parseFloat(String(v ?? "").replace(/,/g, ""));
         return Number.isFinite(n) ? n : 0;
@@ -188,20 +230,7 @@
 
       // 认为“像渠道名”的值：短、无URL、非纯数字、无特殊符号、不能是整句/长备注
       function isLikelyChannel(val) {
-        const raw = String(val ?? "").trim();
-        if (!raw) return false;
-        if (hasUrl(raw) || hasBadChars(raw)) return false;
-        if (raw.length > 40) return false;
-        const norm = normalizeChannelSeparators(raw);
-        if (/\s/.test(norm)) return false; // whitespace likely means not a channel
-        const parts = norm.split("/").map(p => p.trim()).filter(Boolean);
-        if (!parts.length || parts.length > 3) return false;
-        for (const part of parts) {
-          if (part.length < 1 || part.length > 16) return false;
-          if (DIGIT_ONLY.test(part)) return false;
-          if (/[^-\w\u4e00-\u9fa5]/.test(part)) return false;
-        }
-        return true;
+        return Boolean(getChannelTokens(val));
       }
 
       // sheet名转可排序日期
@@ -251,7 +280,9 @@
           const known = ["jinx", "aj", "bai", "tt", "maiya", "xm", "xigua", "xg"];
           for (let c = 0; c < columns; c++) {
             const sample = dataRows.map(r => String((r || [])[c] ?? "").trim()).filter(Boolean);
-            const hit = sample.filter(s => isLikelyChannel(s) && known.some(k => new RegExp(`\\b${k}\\b`, "i").test(s))).length;
+            const hit = sample.filter(
+              s => isLikelyChannel(s) && known.some(k => new RegExp(`\\b${k}\\b`, "i").test(s))
+            ).length;
             if (hit >= 5) {
               debug.push(`sheet 1025 shortcut -> col ${c} (hit=${hit})`);
               setDebug(debug);
@@ -286,8 +317,7 @@
             continue;
           }
 
-          const parts = goodVals
-            .flatMap(v => normalizeChannelSeparators(v).split("/").map(p => p.trim()).filter(Boolean));
+          const parts = goodVals.flatMap(v => getChannelTokens(v) || []);
           const uniqParts = new Set(parts);
           const dupRatio = parts.length ? 1 - uniqParts.size / parts.length : 0;
           const channelishRatio = goodVals.length / nonEmpty.length;
@@ -330,42 +360,47 @@
           for (let r = meta.headerRow + 1; r < rows.length; r++) {
             const row = rows[r] || [];
             const rawVal = row[chCol];
-            if (!isLikelyChannel(rawVal)) continue; // 值级过滤
             const channel = normalizeChannelValue(rawVal);
-            if (!channel) continue;
+            if (!channel) continue; // 值级过滤
 
             const jinfen = toNum(row[meta.colJ]);
             const huifu = toNum(row[meta.colH]);
             const gumin = toNum(row[meta.colG]);
 
             if (!rawByDay[dayKey][channel]) {
-              rawByDay[dayKey][channel] = { 当日进粉: 0, 当日回复: 0, 当日股民: 0 };
+              rawByDay[dayKey][channel] = {
+                [METRIC_JINFEN]: 0,
+                [METRIC_HUIFU]: 0,
+                [METRIC_GUMIN]: 0,
+              };
             }
-            rawByDay[dayKey][channel].当日进粉 += jinfen;
-            rawByDay[dayKey][channel].当日回复 += huifu;
-            rawByDay[dayKey][channel].当日股民 += gumin;
+            const bucket = rawByDay[dayKey][channel];
+            bucket[METRIC_JINFEN] += jinfen;
+            bucket[METRIC_HUIFU] += huifu;
+            bucket[METRIC_GUMIN] += gumin;
           }
         });
 
         Object.keys(rawByDay).forEach(day => {
           Object.keys(rawByDay[day]).forEach(ch => {
             const o = rawByDay[day][ch];
+            const total = o[METRIC_JINFEN];
             result.push({
-              日期: day,
-              渠道名: ch,
-              当日进粉: o.当日进粉,
-              当日回复: o.当日回复,
-              当日回复率: pct2(o.当日回复, o.当日进粉),
-              当日股民: o.当日股民,
-              当日股民率: pct2(o.当日股民, o.当日进粉),
+              [FIELD_DATE]: day,
+              [FIELD_CHANNEL]: ch,
+              [METRIC_JINFEN]: o[METRIC_JINFEN],
+              [METRIC_HUIFU]: o[METRIC_HUIFU],
+              [METRIC_HUIFU_RATE]: pct2(o[METRIC_HUIFU], total),
+              [METRIC_GUMIN]: o[METRIC_GUMIN],
+              [METRIC_GUMIN_RATE]: pct2(o[METRIC_GUMIN], total),
             });
           });
         });
 
         result.sort((a, b) => {
-          const da = sheetNameToDateKey(a.日期) - sheetNameToDateKey(b.日期);
+          const da = sheetNameToDateKey(b[FIELD_DATE]) - sheetNameToDateKey(a[FIELD_DATE]);
           if (da !== 0) return da;
-          return a.渠道名.localeCompare(b.渠道名, "zh-CN");
+          return a[FIELD_CHANNEL].localeCompare(b[FIELD_CHANNEL], "zh-CN");
         });
         return result;
       }
@@ -378,7 +413,7 @@
       function rebuildChannelFilters() {
         const box = document.getElementById("channelFilters");
         box.innerHTML = "";
-        channelsAll = new Set(globalData.map(d => d.渠道名));
+        channelsAll = new Set(globalData.map(d => d[FIELD_CHANNEL]));
         [...channelsAll]
           .sort((a, b) => a.localeCompare(b, "zh-CN"))
           .forEach((ch, i) => {
@@ -400,12 +435,12 @@
         const metric = document.getElementById("metric").value;
         const channels = getSelectedChannels();
 
-        const days = [...new Set(globalData.map(d => d.日期))].sort(
+        const days = [...new Set(globalData.map(d => d[FIELD_DATE]))].sort(
           (a, b) => sheetNameToDateKey(a) - sheetNameToDateKey(b)
         );
         const datasets = channels.map(ch => {
           const series = days.map(day => {
-            const row = globalData.find(r => r.日期 === day && r.渠道名 === ch);
+            const row = globalData.find(r => r[FIELD_DATE] === day && r[FIELD_CHANNEL] === ch);
             return row ? row[metric] : 0;
           });
           return { label: ch, data: series };
@@ -430,7 +465,10 @@
             scales: {
               y: {
                 beginAtZero: true,
-                ticks: { callback: v => (String(metric).includes("率") ? `${v}%` : v) },
+                ticks: {
+                  callback: value =>
+                    isPercentMetric(metric) && Number.isFinite(Number(value)) ? `${Number(value).toFixed(2)}%` : value,
+                },
                 title: { display: true, text: metric },
               },
               x: { title: { display: true, text: "日期" } },
@@ -439,8 +477,25 @@
               legend: { position: "top", labels: { usePointStyle: true } },
               tooltip: {
                 callbacks: {
-                  label: ctx =>
-                    `${ctx.dataset.label}: ${String(metric).includes("率") ? ctx.parsed.y + "%" : ctx.parsed.y}`,
+                  title: items => {
+                    if (!items.length) return "";
+                    const idx = items[0].dataIndex;
+                    const day = days[idx];
+                    const dateLabel = formatDateLabel(day);
+                    return [`${dateLabel}`, items[0].dataset.label];
+                  },
+                  label: ctx => `${metric}: ${formatMetricValue(metric, ctx.parsed.y)}`,
+                  afterBody: items => {
+                    if (!items.length) return [];
+                    const idx = items[0].dataIndex;
+                    const day = days[idx];
+                    const channel = items[0].dataset.label;
+                    const record = globalData.find(r => r[FIELD_DATE] === day && r[FIELD_CHANNEL] === channel);
+                    if (!record) return [];
+                    return METRIC_KEYS.filter(key => key !== metric).map(
+                      key => `${key}: ${formatMetricValue(key, record[key])}`
+                    );
+                  },
                 },
               },
             },
@@ -454,45 +509,40 @@
           tbl.innerHTML = "";
           return;
         }
-        const head = `
-      <thead><tr>
-        <th>日期</th><th>渠道名</th>
-        <th class="right">当日进粉</th><th class="right">当日回复</th><th class="right">当日回复率（%）</th>
-        <th class="right">当日股民</th><th class="right">当日股民率（%）</th>
-      </tr></thead>`;
+        const metricHeaders = METRIC_KEYS.map(key => `<th class="right">${key}</th>`).join("");
+        const head = `<thead><tr><th>日期</th><th>渠道名</th>${metricHeaders}</tr></thead>`;
         const body = globalData
-          .map(
-            r => `
+          .map(r => {
+            const metricCells = METRIC_KEYS.map(key => `<td class="right">${formatMetricValue(key, r[key])}</td>`).join(
+              ""
+            );
+            return `
       <tr>
-        <td>${formatDateLabel(r.日期)}</td>
-        <td>${r.渠道名}</td>
-        <td class="right">${r.当日进粉}</td>
-        <td class="right">${r.当日回复}</td>
-        <td class="right">${r.当日回复率.toFixed(2)}</td>
-        <td class="right">${r.当日股民}</td>
-        <td class="right">${r.当日股民率.toFixed(2)}</td>
-      </tr>`
-          )
+        <td>${formatDateLabel(r[FIELD_DATE])}</td>
+        <td>${r[FIELD_CHANNEL]}</td>
+        ${metricCells}
+      </tr>`;
+          })
           .join("");
         tbl.innerHTML = head + `<tbody>${body}</tbody>`;
       }
 
       function exportCsv() {
         if (!globalData.length) return;
-        const header = ["日期", "渠道名", "当日进粉", "当日回复", "当日回复率(%)", "当日股民", "当日股民率(%)"];
+        const header = [FIELD_DATE, FIELD_CHANNEL, ...METRIC_KEYS];
         const lines = [header.join(",")];
         globalData.forEach(r => {
-          lines.push(
-            [
-              formatDateLabel(r.日期),
-              `"${r.渠道名.replace(/"/g, '""')}"`,
-              r.当日进粉,
-              r.当日回复,
-              r.当日回复率.toFixed(2),
-              r.当日股民,
-              r.当日股民率.toFixed(2),
-            ].join(",")
-          );
+          const row = [
+            formatDateLabel(r[FIELD_DATE]),
+            `"${(r[FIELD_CHANNEL] || "").replace(/"/g, '""')}"`,
+            ...METRIC_KEYS.map(key => {
+              const value = r[key];
+              if (value === null || value === undefined || value === "") return "";
+              if (isPercentMetric(key)) return Number(value).toFixed(2);
+              return value;
+            }),
+          ];
+          lines.push(row.join(","));
         });
         const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
         const a = document.createElement("a");
@@ -509,8 +559,8 @@
         const wb = XLSX.read(buf, { type: "array" });
         const data = aggregateWorkbook(wb);
         // 若误检风险仍高，可考虑：过滤出出现频次>=2次的渠道名
-        // const counts = data.reduce((m,d)=> (m[d.渠道名]=(m[d.渠道名]||0)+1, m), {});
-        // globalData = data.filter(d=> counts[d.渠道名] >= 2);
+        // const counts = data.reduce((m,d)=> (m[d[FIELD_CHANNEL]]=(m[d[FIELD_CHANNEL]]||0)+1, m), {});
+        // globalData = data.filter(d=> counts[d[FIELD_CHANNEL]] >= 2);
         globalData = data;
         rebuildChannelFilters();
         renderTable();
