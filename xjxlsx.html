@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
@@ -24,7 +24,7 @@
         font-family: ui-sans-serif, system-ui, "PingFang SC", "Microsoft YaHei", Arial;
       }
       .container {
-        max-width: 1200px;
+        max-width: 80%;
         margin: 0 auto;
         padding: 24px;
       }
@@ -97,6 +97,9 @@
         background: #0e1430;
         font-size: 13px;
         min-width: 760px;
+      }
+      tbody tr.date-alt {
+        background: rgba(255, 255, 255, 0.04);
       }
       th,
       td {
@@ -213,9 +216,43 @@
       const METRIC_HUIFU_RATE = "当日回复率（%）";
       const METRIC_GUMIN = "当日股民";
       const METRIC_GUMIN_RATE = "当日股民率（%）";
-      const METRIC_KEYS = [METRIC_JINFEN, METRIC_HUIFU, METRIC_HUIFU_RATE, METRIC_GUMIN, METRIC_GUMIN_RATE];
-      const PERCENT_METRICS = new Set([METRIC_HUIFU_RATE, METRIC_GUMIN_RATE]);
+      const METRIC_YOUXIAO = "有效";
+      const METRIC_YOUXIAO_RATE = "有效率（%）";
+      const METRIC_YIGUO = "异国";
+      const METRIC_YIGUO_RATE = "异国率（%）";
+      const METRIC_CHONGFEN = "重粉";
+      const METRIC_CHONGFEN_RATE = "重粉率（%）";
+      const METRIC_JINQUN = "进群";
+      const METRIC_JINQUN_RATE = "进群率（%）";
+      const METRIC_KEYS = [
+        METRIC_JINFEN,
+        METRIC_HUIFU,
+        METRIC_HUIFU_RATE,
+        METRIC_GUMIN,
+        METRIC_GUMIN_RATE,
+        METRIC_YOUXIAO,
+        METRIC_YOUXIAO_RATE,
+        METRIC_YIGUO,
+        METRIC_YIGUO_RATE,
+        METRIC_CHONGFEN,
+        METRIC_CHONGFEN_RATE,
+        METRIC_JINQUN,
+        METRIC_JINQUN_RATE,
+      ];
+      const PERCENT_METRICS = new Set([
+        METRIC_HUIFU_RATE,
+        METRIC_GUMIN_RATE,
+        METRIC_YOUXIAO_RATE,
+        METRIC_YIGUO_RATE,
+        METRIC_CHONGFEN_RATE,
+        METRIC_JINQUN_RATE,
+      ]);
       const isPercentMetric = key => PERCENT_METRICS.has(key) || /率/.test(String(key));
+      const metricSelect = document.getElementById("metric");
+      if (metricSelect) {
+        metricSelect.innerHTML = METRIC_KEYS.map(key => `<option value="${key}">${key}</option>`).join("");
+        metricSelect.value = METRIC_JINFEN;
+      }
       const formatMetricValue = (key, value) => {
         if (value === null || value === undefined || value === "") return "-";
         const num = Number(value);
@@ -248,25 +285,53 @@
 
       // 找表头
       function findHeaderAndIndexes(rows) {
-        const keys = ["当日进粉", "当日回复", "当日股民"];
+        const requiredKeys = ["当日进粉", "当日回复", "当日股民"];
         for (let r = 0; r < Math.min(rows.length, 30); r++) {
           const row = rows[r] || [];
           const joined = row.map(v => String(v ?? "")).join("|");
-          if (keys.every(k => joined.includes(k))) {
+          if (requiredKeys.every(k => joined.includes(k))) {
+            const findCol = (keywords, options = {}) => {
+              const { exclude = [] } = options;
+              for (let c = 0; c < row.length; c++) {
+                const text = String(row[c] ?? "");
+                if (!text) continue;
+                if (exclude.some(ex => text.includes(ex))) continue;
+                if (keywords.some(k => text.includes(k))) return c;
+              }
+              return -1;
+            };
             return {
               headerRow: r,
-              colJ: row.findIndex(x => String(x ?? "").includes("当日进粉")),
-              colH: row.findIndex(x => String(x ?? "").includes("当日回复")),
-              colG: row.findIndex(x => String(x ?? "").includes("当日股民")),
+              colJ: findCol(["当日进粉", "进粉"], { exclude: ["率"] }),
+              colH: findCol(["当日回复", "回复"], { exclude: ["率"] }),
+              colG: findCol(["当日股民", "股民"], { exclude: ["率"] }),
+              colYouxiao: findCol(["当日有效", "有效"], { exclude: ["率"] }),
+              colYiguo: findCol(["当日异国", "异国"], { exclude: ["率"] }),
+              colChongfen: findCol(["当日重粉", "重粉"], { exclude: ["率"] }),
+              colJinqun: findCol(["当日进群", "进群"], { exclude: ["率"] }),
             };
           }
         }
         const fb = rows[1] || [];
+        const fallbackFindCol = (keywords, options = {}) => {
+          const { exclude = [] } = options;
+          for (let c = 0; c < fb.length; c++) {
+            const text = String(fb[c] ?? "");
+            if (!text) continue;
+            if (exclude.some(ex => text.includes(ex))) continue;
+            if (keywords.some(k => text.includes(k))) return c;
+          }
+          return -1;
+        };
         return {
           headerRow: 1,
-          colJ: fb.findIndex(x => String(x ?? "").includes("当日进粉")),
-          colH: fb.findIndex(x => String(x ?? "").includes("当日回复")),
-          colG: fb.findIndex(x => String(x ?? "").includes("当日股民")),
+          colJ: fallbackFindCol(["当日进粉", "进粉"], { exclude: ["率"] }),
+          colH: fallbackFindCol(["当日回复", "回复"], { exclude: ["率"] }),
+          colG: fallbackFindCol(["当日股民", "股民"], { exclude: ["率"] }),
+          colYouxiao: fallbackFindCol(["当日有效", "有效"], { exclude: ["率"] }),
+          colYiguo: fallbackFindCol(["当日异国", "异国"], { exclude: ["率"] }),
+          colChongfen: fallbackFindCol(["当日重粉", "重粉"], { exclude: ["率"] }),
+          colJinqun: fallbackFindCol(["当日进群", "进群"], { exclude: ["率"] }),
         };
       }
 
@@ -366,18 +431,30 @@
             const jinfen = toNum(row[meta.colJ]);
             const huifu = toNum(row[meta.colH]);
             const gumin = toNum(row[meta.colG]);
+            const youxiao = meta.colYouxiao >= 0 ? toNum(row[meta.colYouxiao]) : 0;
+            const yiguo = meta.colYiguo >= 0 ? toNum(row[meta.colYiguo]) : 0;
+            const chongfen = meta.colChongfen >= 0 ? toNum(row[meta.colChongfen]) : 0;
+            const jinqun = meta.colJinqun >= 0 ? toNum(row[meta.colJinqun]) : 0;
 
             if (!rawByDay[dayKey][channel]) {
               rawByDay[dayKey][channel] = {
                 [METRIC_JINFEN]: 0,
                 [METRIC_HUIFU]: 0,
                 [METRIC_GUMIN]: 0,
+                [METRIC_YOUXIAO]: 0,
+                [METRIC_YIGUO]: 0,
+                [METRIC_CHONGFEN]: 0,
+                [METRIC_JINQUN]: 0,
               };
             }
             const bucket = rawByDay[dayKey][channel];
             bucket[METRIC_JINFEN] += jinfen;
             bucket[METRIC_HUIFU] += huifu;
             bucket[METRIC_GUMIN] += gumin;
+            bucket[METRIC_YOUXIAO] += youxiao;
+            bucket[METRIC_YIGUO] += yiguo;
+            bucket[METRIC_CHONGFEN] += chongfen;
+            bucket[METRIC_JINQUN] += jinqun;
           }
         });
 
@@ -393,6 +470,14 @@
               [METRIC_HUIFU_RATE]: pct2(o[METRIC_HUIFU], total),
               [METRIC_GUMIN]: o[METRIC_GUMIN],
               [METRIC_GUMIN_RATE]: pct2(o[METRIC_GUMIN], total),
+              [METRIC_YOUXIAO]: o[METRIC_YOUXIAO],
+              [METRIC_YOUXIAO_RATE]: pct2(o[METRIC_YOUXIAO], total),
+              [METRIC_YIGUO]: o[METRIC_YIGUO],
+              [METRIC_YIGUO_RATE]: pct2(o[METRIC_YIGUO], total),
+              [METRIC_CHONGFEN]: o[METRIC_CHONGFEN],
+              [METRIC_CHONGFEN_RATE]: pct2(o[METRIC_CHONGFEN], total),
+              [METRIC_JINQUN]: o[METRIC_JINQUN],
+              [METRIC_JINQUN_RATE]: pct2(o[METRIC_JINQUN], total),
             });
           });
         });
@@ -511,20 +596,26 @@
         }
         const metricHeaders = METRIC_KEYS.map(key => `<th class="right">${key}</th>`).join("");
         const head = `<thead><tr><th>日期</th><th>渠道名</th>${metricHeaders}</tr></thead>`;
-        const body = globalData
-          .map(r => {
-            const metricCells = METRIC_KEYS.map(key => `<td class="right">${formatMetricValue(key, r[key])}</td>`).join(
-              ""
-            );
-            return `
-      <tr>
+        let lastDay = null;
+        let useAlt = false;
+        const bodyRows = [];
+        globalData.forEach(r => {
+          if (r[FIELD_DATE] !== lastDay) {
+            useAlt = !useAlt;
+            lastDay = r[FIELD_DATE];
+          }
+          const rowClass = useAlt ? "date-alt" : "";
+          const metricCells = METRIC_KEYS.map(key => `<td class="right">${formatMetricValue(key, r[key])}</td>`).join(
+            ""
+          );
+          bodyRows.push(`
+      <tr${rowClass ? ` class="${rowClass}"` : ""}>
         <td>${formatDateLabel(r[FIELD_DATE])}</td>
         <td>${r[FIELD_CHANNEL]}</td>
         ${metricCells}
-      </tr>`;
-          })
-          .join("");
-        tbl.innerHTML = head + `<tbody>${body}</tbody>`;
+      </tr>`);
+        });
+        tbl.innerHTML = head + `<tbody>${bodyRows.join("")}</tbody>`;
       }
 
       function exportCsv() {
