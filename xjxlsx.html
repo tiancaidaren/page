@@ -173,6 +173,13 @@
           <table id="table"></table>
         </div>
       </div>
+      <div class="spacer"></div>
+      <div class="card">
+        <h2 style="margin: 0 0 8px; font-size: 18px">客服汇总</h2>
+        <div class="table-wrap">
+          <table id="agentTable"></table>
+        </div>
+      </div>
     </div>
 
     <script>
@@ -211,6 +218,9 @@
       };
       const FIELD_DATE = "日期";
       const FIELD_CHANNEL = "渠道名";
+      const FIELD_AGENT = "线下接粉人";
+      const AGENT_HEADER_KEYWORDS = ["线下接粉人", "接粉人", "接粉客服", "客服"];
+      const AGENT_HEADER_KEYWORDS_LOWER = AGENT_HEADER_KEYWORDS.map(k => k.toLowerCase());
       const METRIC_JINFEN = "当日进粉";
       const METRIC_HUIFU = "当日回复";
       const METRIC_HUIFU_RATE = "当日回复率（%）";
@@ -224,6 +234,7 @@
       const METRIC_CHONGFEN_RATE = "重粉率（%）";
       const METRIC_JINQUN = "进群";
       const METRIC_JINQUN_RATE = "进群率（%）";
+
       const METRIC_KEYS = [
         METRIC_JINFEN,
         METRIC_HUIFU,
@@ -284,6 +295,19 @@
       };
 
       // 找表头
+      function findAgentColumnIndex(row) {
+        if (!row) return -1;
+        for (let c = 0; c < row.length; c++) {
+          const raw = String(row[c] ?? "").trim();
+          if (!raw) continue;
+          const normalized = raw.replace(/\s+/g, "").toLowerCase();
+          if (AGENT_HEADER_KEYWORDS_LOWER.some(keyword => normalized.includes(keyword))) {
+            return c;
+          }
+        }
+        return -1;
+      }
+
       function findHeaderAndIndexes(rows) {
         const requiredKeys = ["当日进粉", "当日回复", "当日股民"];
         for (let r = 0; r < Math.min(rows.length, 30); r++) {
@@ -300,8 +324,10 @@
               }
               return -1;
             };
+            const agentCol = findAgentColumnIndex(row);
             return {
               headerRow: r,
+              colAgent: agentCol,
               colJ: findCol(["当日进粉", "进粉"], { exclude: ["率"] }),
               colH: findCol(["当日回复", "回复"], { exclude: ["率"] }),
               colG: findCol(["当日股民", "股民"], { exclude: ["率"] }),
@@ -325,6 +351,7 @@
         };
         return {
           headerRow: 1,
+          colAgent: findAgentColumnIndex(fb),
           colJ: fallbackFindCol(["当日进粉", "进粉"], { exclude: ["率"] }),
           colH: fallbackFindCol(["当日回复", "回复"], { exclude: ["率"] }),
           colG: fallbackFindCol(["当日股民", "股民"], { exclude: ["率"] }),
@@ -421,6 +448,8 @@
           const chCol = guessChannelColumn(rows, meta.headerRow, name);
           if (chCol < 0 || meta.colJ < 0 || meta.colH < 0 || meta.colG < 0) return;
 
+          const agentCol = meta.colAgent;
+
           const dayKey = name;
           rawByDay[dayKey] = rawByDay[dayKey] || {};
           rawAgentByDay[dayKey] = rawAgentByDay[dayKey] || {};
@@ -438,6 +467,8 @@
             const yiguo = meta.colYiguo >= 0 ? toNum(row[meta.colYiguo]) : 0;
             const chongfen = meta.colChongfen >= 0 ? toNum(row[meta.colChongfen]) : 0;
             const jinqun = meta.colJinqun >= 0 ? toNum(row[meta.colJinqun]) : 0;
+
+            const agentName = agentCol >= 0 ? normalizeChannelValue(row[agentCol]) : "";
 
             if (!rawByDay[dayKey][channel]) {
               rawByDay[dayKey][channel] = {
@@ -458,6 +489,27 @@
             bucket[METRIC_YIGUO] += yiguo;
             bucket[METRIC_CHONGFEN] += chongfen;
             bucket[METRIC_JINQUN] += jinqun;
+            if (agentName) {
+              if (!rawAgentByDay[dayKey][agentName]) {
+                rawAgentByDay[dayKey][agentName] = {
+                  [METRIC_JINFEN]: 0,
+                  [METRIC_HUIFU]: 0,
+                  [METRIC_GUMIN]: 0,
+                  [METRIC_YOUXIAO]: 0,
+                  [METRIC_YIGUO]: 0,
+                  [METRIC_CHONGFEN]: 0,
+                  [METRIC_JINQUN]: 0,
+                };
+              }
+              const agentBucket = rawAgentByDay[dayKey][agentName];
+              agentBucket[METRIC_JINFEN] += jinfen;
+              agentBucket[METRIC_HUIFU] += huifu;
+              agentBucket[METRIC_GUMIN] += gumin;
+              agentBucket[METRIC_YOUXIAO] += youxiao;
+              agentBucket[METRIC_YIGUO] += yiguo;
+              agentBucket[METRIC_CHONGFEN] += chongfen;
+              agentBucket[METRIC_JINQUN] += jinqun;
+            }
           }
         });
 
@@ -485,16 +537,47 @@
           });
         });
 
+        const agentResult = [];
+        Object.keys(rawAgentByDay).forEach(day => {
+          Object.keys(rawAgentByDay[day]).forEach(agent => {
+            const o = rawAgentByDay[day][agent];
+            const total = o[METRIC_JINFEN];
+            agentResult.push({
+              [FIELD_DATE]: day,
+              [FIELD_AGENT]: agent,
+              [METRIC_JINFEN]: o[METRIC_JINFEN],
+              [METRIC_HUIFU]: o[METRIC_HUIFU],
+              [METRIC_HUIFU_RATE]: pct2(o[METRIC_HUIFU], total),
+              [METRIC_GUMIN]: o[METRIC_GUMIN],
+              [METRIC_GUMIN_RATE]: pct2(o[METRIC_GUMIN], total),
+              [METRIC_YOUXIAO]: o[METRIC_YOUXIAO],
+              [METRIC_YOUXIAO_RATE]: pct2(o[METRIC_YOUXIAO], total),
+              [METRIC_YIGUO]: o[METRIC_YIGUO],
+              [METRIC_YIGUO_RATE]: pct2(o[METRIC_YIGUO], total),
+              [METRIC_CHONGFEN]: o[METRIC_CHONGFEN],
+              [METRIC_CHONGFEN_RATE]: pct2(o[METRIC_CHONGFEN], total),
+              [METRIC_JINQUN]: o[METRIC_JINQUN],
+              [METRIC_JINQUN_RATE]: pct2(o[METRIC_JINQUN], total),
+            });
+          });
+        });
+
         result.sort((a, b) => {
           const da = sheetNameToDateKey(b[FIELD_DATE]) - sheetNameToDateKey(a[FIELD_DATE]);
           if (da !== 0) return da;
           return a[FIELD_CHANNEL].localeCompare(b[FIELD_CHANNEL], "zh-CN");
         });
-        return result;
+        agentResult.sort((a, b) => {
+          const da = sheetNameToDateKey(b[FIELD_DATE]) - sheetNameToDateKey(a[FIELD_DATE]);
+          if (da !== 0) return da;
+          return a[FIELD_AGENT].localeCompare(b[FIELD_AGENT], "zh-CN");
+        });
+        return { channel: result, agent: agentResult };
       }
 
       // ------- 渲染：图 + 过滤 + 表 -------
       let globalData = [];
+      let agentData = [];
       let chart,
         channelsAll = new Set();
 
@@ -591,37 +674,44 @@
         });
       }
 
-      function renderTable() {
-        const tbl = document.getElementById("table");
-        if (!globalData.length) {
+      function renderSummaryTable(tableId, data, secondKey) {
+        const tbl = document.getElementById(tableId);
+        if (!tbl) return;
+        if (!data.length) {
           tbl.innerHTML = "";
           return;
         }
         const metricHeaders = METRIC_KEYS.map(key => `<th class="right">${key}</th>`).join("");
-        const head = `<thead><tr><th>日期</th><th>渠道名</th>${metricHeaders}</tr></thead>`;
+        const head = `<thead><tr><th>${FIELD_DATE}</th><th>${secondKey}</th>${metricHeaders}</tr></thead>`;
         let lastDay = null;
         let useAlt = false;
         const bodyRows = [];
-        globalData.forEach(r => {
+        data.forEach(r => {
           if (r[FIELD_DATE] !== lastDay) {
             useAlt = !useAlt;
             lastDay = r[FIELD_DATE];
           }
           const rowClass = useAlt ? "date-alt" : "";
-          const metricCells = METRIC_KEYS.map(key => `<td class="right">${formatMetricValue(key, r[key])}</td>`).join(
-            ""
-          );
+          const metricCells = METRIC_KEYS.map(key => `<td class="right">${formatMetricValue(key, r[key])}</td>`).join("");
           bodyRows.push(`
       <tr${rowClass ? ` class="${rowClass}"` : ""}>
         <td>${formatDateLabel(r[FIELD_DATE])}</td>
-        <td>${r[FIELD_CHANNEL]}</td>
+        <td>${r[secondKey]}</td>
         ${metricCells}
       </tr>`);
         });
         tbl.innerHTML = head + `<tbody>${bodyRows.join("")}</tbody>`;
       }
 
-      function exportCsv() {
+      function renderTable() {
+        renderSummaryTable("table", globalData, FIELD_CHANNEL);
+      }
+
+      function renderAgentTable() {
+        renderSummaryTable("agentTable", agentData, FIELD_AGENT);
+      }
+
+function exportCsv() {
         if (!globalData.length) return;
         const header = [FIELD_DATE, FIELD_CHANNEL, ...METRIC_KEYS];
         const lines = [header.join(",")];
@@ -651,13 +741,15 @@
         if (!f) return;
         const buf = await f.arrayBuffer();
         const wb = XLSX.read(buf, { type: "array" });
-        const data = aggregateWorkbook(wb);
+        const aggregated = aggregateWorkbook(wb);
         // 若误检风险仍高，可考虑：过滤出出现频次>=2次的渠道名
-        // const counts = data.reduce((m,d)=> (m[d[FIELD_CHANNEL]]=(m[d[FIELD_CHANNEL]]||0)+1, m), {});
-        // globalData = data.filter(d=> counts[d[FIELD_CHANNEL]] >= 2);
-        globalData = data;
+        // const counts = aggregated.channel.reduce((m,d)=> (m[d[FIELD_CHANNEL]]=(m[d[FIELD_CHANNEL]]||0)+1, m), {});
+        // globalData = aggregated.channel.filter(d=> counts[d[FIELD_CHANNEL]] >= 2);
+        globalData = aggregated.channel;
+        agentData = aggregated.agent;
         rebuildChannelFilters();
         renderTable();
+        renderAgentTable();
         drawChart();
       });
 
