@@ -264,6 +264,7 @@
         return Number.isFinite(n) ? n : 0;
       };
       const pct2 = (num, den) => (den > 0 ? Math.round((num / den) * 10000) / 100 : 0); // 两位小数 %
+      let sheetOrder = new Map(); // remember workbook sheet order for day grouping
 
       // 认为“像渠道名”的值：短、无URL、非纯数字、无特殊符号、不能是整句/长备注
       function isLikelyChannel(val) {
@@ -272,15 +273,14 @@
 
       // sheet名转可排序日期
       function sheetNameToDateKey(name) {
-        const s = String(name).trim();
-        if (/^\d{4}$/.test(s)) return new Date(`2024-10-${s.slice(2)}`);
-        if (/^\d{3}$/.test(s)) return new Date(`2024-11-0${s.slice(1)}`);
-        const d = new Date(s);
-        return isNaN(+d) ? new Date(`2024-10-01`) : d;
+        if (sheetOrder.has(name)) return sheetOrder.get(name);
+        return Number.POSITIVE_INFINITY;
       }
       const formatDateLabel = name => {
-        const d = sheetNameToDateKey(name);
-        return `${d.getMonth() + 1}-${String(d.getDate()).padStart(2, "0")}`;
+        const label = String(name ?? "").trim();
+        if (label) return label;
+        const order = sheetNameToDateKey(name);
+        return Number.isFinite(order) ? `Day ${order + 1}` : "";
       };
 
       // 找表头
@@ -409,6 +409,8 @@
         const sheetNames = wb.SheetNames || [];
         const result = [];
         const rawByDay = {};
+        const rawAgentByDay = {};
+        sheetOrder = new Map(sheetNames.map((name, idx) => [name, idx]));
 
         sheetNames.forEach(name => {
           const ws = wb.Sheets[name];
@@ -421,6 +423,7 @@
 
           const dayKey = name;
           rawByDay[dayKey] = rawByDay[dayKey] || {};
+          rawAgentByDay[dayKey] = rawAgentByDay[dayKey] || {};
 
           for (let r = meta.headerRow + 1; r < rows.length; r++) {
             const row = rows[r] || [];
