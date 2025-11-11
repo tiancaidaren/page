@@ -152,6 +152,8 @@
             <button id="selectAll">全选渠道</button>
             <button id="clearAll">清空渠道</button>
             <button id="downloadCsv">导出汇总CSV</button>
+            <button id="downloadAgentCsv">导出客服CSV</button>
+            <button id="downloadAgentTotalsCsv">导出客服总汇总CSV</button>
           </div>
         </div>
 
@@ -171,6 +173,13 @@
         <h2 style="margin: 0 0 8px; font-size: 18px">汇总数据</h2>
         <div class="table-wrap">
           <table id="table"></table>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <div class="card">
+        <h2 style="margin: 0 0 8px; font-size: 18px">客服总汇总</h2>
+        <div class="table-wrap">
+          <table id="agentTotalsTable"></table>
         </div>
       </div>
       <div class="spacer"></div>
@@ -249,6 +258,15 @@
         METRIC_CHONGFEN_RATE,
         METRIC_JINQUN,
         METRIC_JINQUN_RATE,
+      ];
+      const METRIC_ABSOLUTE_KEYS = [
+        METRIC_JINFEN,
+        METRIC_HUIFU,
+        METRIC_GUMIN,
+        METRIC_YOUXIAO,
+        METRIC_YIGUO,
+        METRIC_CHONGFEN,
+        METRIC_JINQUN,
       ];
       const PERCENT_METRICS = new Set([
         METRIC_HUIFU_RATE,
@@ -578,6 +596,7 @@
       // ------- 渲染：图 + 过滤 + 表 -------
       let globalData = [];
       let agentData = [];
+      let agentTotals = [];
       let chart,
         channelsAll = new Set();
 
@@ -711,14 +730,83 @@
         renderSummaryTable("agentTable", agentData, FIELD_AGENT);
       }
 
-function exportCsv() {
-        if (!globalData.length) return;
-        const header = [FIELD_DATE, FIELD_CHANNEL, ...METRIC_KEYS];
+      function buildAgentTotals(data) {
+        const totals = {};
+        data.forEach(row => {
+          const agent = row[FIELD_AGENT];
+          if (!agent) return;
+          if (!totals[agent]) {
+            totals[agent] = {
+              [METRIC_JINFEN]: 0,
+              [METRIC_HUIFU]: 0,
+              [METRIC_GUMIN]: 0,
+              [METRIC_YOUXIAO]: 0,
+              [METRIC_YIGUO]: 0,
+              [METRIC_CHONGFEN]: 0,
+              [METRIC_JINQUN]: 0,
+            };
+          }
+          const bucket = totals[agent];
+          bucket[METRIC_JINFEN] += Number(row[METRIC_JINFEN]) || 0;
+          bucket[METRIC_HUIFU] += Number(row[METRIC_HUIFU]) || 0;
+          bucket[METRIC_GUMIN] += Number(row[METRIC_GUMIN]) || 0;
+          bucket[METRIC_YOUXIAO] += Number(row[METRIC_YOUXIAO]) || 0;
+          bucket[METRIC_YIGUO] += Number(row[METRIC_YIGUO]) || 0;
+          bucket[METRIC_CHONGFEN] += Number(row[METRIC_CHONGFEN]) || 0;
+          bucket[METRIC_JINQUN] += Number(row[METRIC_JINQUN]) || 0;
+        });
+        return Object.keys(totals)
+          .map(agent => {
+            const base = totals[agent];
+            const total = base[METRIC_JINFEN] || 0;
+            return {
+              [FIELD_AGENT]: agent,
+              [METRIC_JINFEN]: base[METRIC_JINFEN],
+              [METRIC_HUIFU]: base[METRIC_HUIFU],
+              [METRIC_HUIFU_RATE]: pct2(base[METRIC_HUIFU], total),
+              [METRIC_GUMIN]: base[METRIC_GUMIN],
+              [METRIC_GUMIN_RATE]: pct2(base[METRIC_GUMIN], total),
+              [METRIC_YOUXIAO]: base[METRIC_YOUXIAO],
+              [METRIC_YOUXIAO_RATE]: pct2(base[METRIC_YOUXIAO], total),
+              [METRIC_YIGUO]: base[METRIC_YIGUO],
+              [METRIC_YIGUO_RATE]: pct2(base[METRIC_YIGUO], total),
+              [METRIC_CHONGFEN]: base[METRIC_CHONGFEN],
+              [METRIC_CHONGFEN_RATE]: pct2(base[METRIC_CHONGFEN], total),
+              [METRIC_JINQUN]: base[METRIC_JINQUN],
+              [METRIC_JINQUN_RATE]: pct2(base[METRIC_JINQUN], total),
+            };
+          })
+          .sort((a, b) => a[FIELD_AGENT].localeCompare(b[FIELD_AGENT], "zh-CN"));
+      }
+
+      function renderAgentTotalsTable() {
+        const tbl = document.getElementById("agentTotalsTable");
+        if (!tbl) return;
+        if (!agentTotals.length) {
+          tbl.innerHTML = "";
+          return;
+        }
+        const metricHeaders = METRIC_KEYS.map(key => `<th class="right">${key}</th>`).join("");
+        const head = `<thead><tr><th>${FIELD_AGENT}</th>${metricHeaders}</tr></thead>`;
+        const rows = agentTotals.map(r => {
+          const metricCells = METRIC_KEYS.map(key => `<td class="right">${formatMetricValue(key, r[key])}</td>`).join("");
+          return `
+      <tr>
+        <td>${r[FIELD_AGENT]}</td>
+        ${metricCells}
+      </tr>`;
+        });
+        tbl.innerHTML = head + `<tbody>${rows.join("")}</tbody>`;
+      }
+
+      function exportSummaryCsv(data, secondKey, fileName) {
+        if (!data.length) return;
+        const header = [FIELD_DATE, secondKey, ...METRIC_KEYS];
         const lines = [header.join(",")];
-        globalData.forEach(r => {
+        data.forEach(r => {
           const row = [
             formatDateLabel(r[FIELD_DATE]),
-            `"${(r[FIELD_CHANNEL] || "").replace(/"/g, '""')}"`,
+            `"${(r[secondKey] || "").replace(/"/g, '""')}"`,
             ...METRIC_KEYS.map(key => {
               const value = r[key];
               if (value === null || value === undefined || value === "") return "";
@@ -731,8 +819,20 @@ function exportCsv() {
         const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
-        a.download = "每日渠道汇总.csv";
+        a.download = fileName;
         a.click();
+      }
+
+      function exportChannelCsv() {
+        exportSummaryCsv(globalData, FIELD_CHANNEL, "每日渠道汇总.csv");
+      }
+
+      function exportAgentCsv() {
+        exportSummaryCsv(agentData, FIELD_AGENT, "每日客服汇总.csv");
+      }
+
+      function exportAgentTotalsCsv() {
+        exportSummaryCsv(agentTotals, FIELD_AGENT, "客服总汇总.csv");
       }
 
       // 事件
@@ -747,8 +847,10 @@ function exportCsv() {
         // globalData = aggregated.channel.filter(d=> counts[d[FIELD_CHANNEL]] >= 2);
         globalData = aggregated.channel;
         agentData = aggregated.agent;
+        agentTotals = buildAgentTotals(agentData);
         rebuildChannelFilters();
         renderTable();
+        renderAgentTotalsTable();
         renderAgentTable();
         drawChart();
       });
@@ -762,7 +864,9 @@ function exportCsv() {
         document.querySelectorAll("#channelFilters input[type=checkbox]").forEach(c => (c.checked = false));
         drawChart();
       });
-      document.getElementById("downloadCsv").addEventListener("click", exportCsv);
+      document.getElementById("downloadCsv").addEventListener("click", exportChannelCsv);
+      document.getElementById("downloadAgentCsv").addEventListener("click", exportAgentCsv);
+      document.getElementById("downloadAgentTotalsCsv").addEventListener("click", exportAgentTotalsCsv);
     </script>
   </body>
 </html>
